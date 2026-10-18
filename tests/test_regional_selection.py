@@ -35,5 +35,14 @@ class RegionalTests(unittest.TestCase):
             region.suggest(45, -66, [], "port", limit=0)
 
 
+    def test_regional_preview(self):
+        result = region.regional_preview(45.27, -66.06, [])
+        self.assertEqual(result["map"]["center"]["latitude"], 45.27)
+        self.assertEqual(result["standard_receive_mhz"]["adsb"], 1090.0)
+        self.assertFalse(result["applies_changes"])
+
+    def test_override_map_center(self):
+        result = region.map_view_suggestion(45, -66, {"latitude": 44.65, "longitude": -63.57})
+        self.assertEqual(result["center"]["longitude"], -63.57)
 if __name__ == "__main__":
     unittest.main()

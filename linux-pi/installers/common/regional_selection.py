@@ -46,6 +46,29 @@ def suggest(latitude: float, longitude: float, catalog: list[dict],
     return sorted(found, key=lambda v: (v["distance_km"], v["name"]))[:limit]
 
 
+
+def map_view_suggestion(latitude: float, longitude: float, selection: dict | None = None) -> dict:
+    """Preview map centering only; does not modify a running web console."""
+    latitude, longitude = validate_coordinate(latitude, longitude)
+    if selection:
+        latitude, longitude = validate_coordinate(selection["latitude"], selection["longitude"])
+    return {"center": {"latitude": latitude, "longitude": longitude}, "zoom": 10}
+
+
+# Internationally common receive frequencies; not location-specific voice presets.
+STANDARD_RECEIVE_MHZ = {"ais_a": 161.975, "ais_b": 162.025, "adsb": 1090.0}
+
+
+def regional_preview(latitude: float, longitude: float, catalog: list[dict]) -> dict:
+    """Suggest map location and candidate facilities without controlling a receiver."""
+    latitude, longitude = validate_coordinate(latitude, longitude)
+    return {
+        "map": map_view_suggestion(latitude, longitude),
+        "nearby_ports": suggest(latitude, longitude, catalog, "port"),
+        "nearby_airports": suggest(latitude, longitude, catalog, "airport"),
+        "standard_receive_mhz": dict(STANDARD_RECEIVE_MHZ),
+        "applies_changes": False,
+    }
 def main() -> int:
     parser = argparse.ArgumentParser(description="Local-only suggestions. Coordinates must be supplied explicitly.")
     parser.add_argument("--latitude", type=float, required=True)
