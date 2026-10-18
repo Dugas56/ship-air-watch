@@ -102,3 +102,17 @@ individual docks, navigable harbours, live AIS stations, public listening
 locations, or authoritative local marine radio-channel assignments. Dates,
 accuracy and data gaps vary. Users should review suggested facilities and
 confirm regional radio channels. Geographic lookup is still opt-in.
+
+## Map integration (opt-in query parameters)
+
+The marine map now accepts **explicit** URL coordinates:
+\`radio-v2-map.html?lat=49.2827&lon=-123.1207\`. If both values are finite
+and inside valid latitude/longitude ranges, the map starts there at zoom 10,
+with the general-purpose topographic background. Without these parameters,
+the existing Saint John map centre, zoom, and Canadian marine chart overlay
+are preserved. Invalid coordinates fall back to the original map.
+
+This does not configure radio channels, tune SDR devices, or silently transmit
+station location via a geolocation service. Note: requesting external map tiles
+may disclose viewed map coordinates to the tile provider, as with ordinary maps.
+Do not treat the Canadian hydrographic chart layer as global coverage.

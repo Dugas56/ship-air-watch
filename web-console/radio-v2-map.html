@@ -42,15 +42,19 @@ body{font:10px Arial,sans-serif}
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script type="module">
 'use strict';
-const center=[45.269,-66.064];
+const params=new URLSearchParams(location.search);
+const requestedLat=params.has('lat')?Number(params.get('lat')):NaN;
+const requestedLon=params.has('lon')?Number(params.get('lon')):NaN;
+const regionalCenter=Number.isFinite(requestedLat)&&Number.isFinite(requestedLon)&&requestedLat>=-90&&requestedLat<=90&&requestedLon>=-180&&requestedLon<=180;
+const center=regionalCenter?[requestedLat,requestedLon]:[45.269,-66.064];
 const proPreview=new URLSearchParams(location.search).get('proPreview')==='1'&&(['localhost','127.0.0.1','::1'].includes(location.hostname)||location.hostname==='desktop-akh1u97.tail1781aa.ts.net');
-const map=L.map('map',{center,zoom:14,zoomControl:false,attributionControl:true,preferCanvas:true});
+const map=L.map('map',{center,zoom:regionalCenter?10:14,zoomControl:false,attributionControl:true,preferCanvas:true});
 const street=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'});
 const topo=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'});
 const satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
 const chart=L.tileLayer.wms('https://egisp.dfo-mpo.gc.ca/arcgis/rest/services/chs/ENC_MaritimeChartService/MapServer/exts/MaritimeChartService/WMSServer',{layers:'1,2,3,4,5,6,7,8,9,10,11,12',format:'image/png',transparent:true,version:'1.3.0',attribution:'Canadian Hydrographic Service · display only, not for navigation'});
 let terrainMap=null,terrainModule=null,voicePaused=false,showVessels=false,showTugs=true,latestTargets=[],leafletMarkers=[],terrainMarkers=[],trackLayers=[],trackById=new Map(),selectedTrackId='',selectedDestinationLayer=null,lastTrackRefresh=0;
-topo.addTo(map);chart.addTo(map);
+topo.addTo(map);if(!regionalCenter)chart.addTo(map);
 const status=document.getElementById('status');
 const mapStyle=document.getElementById('mapStyle');
 const markerToggle=document.getElementById('markerToggle');
@@ -79,7 +83,7 @@ function setStyle(value){
   showLeaflet();
   [street,topo,satellite].forEach(layer=>{if(map.hasLayer(layer))map.removeLayer(layer)});
   if(map.hasLayer(chart))map.removeLayer(chart);
-  if(value==='chart'){topo.addTo(map);chart.addTo(map);setStatus('SAINT JOHN · CHS MARINE CHART · NO VESSEL MARKERS · DISPLAY ONLY')}
+  if(value==='chart'){topo.addTo(map);if(!regionalCenter)chart.addTo(map);setStatus('SAINT JOHN · CHS MARINE CHART · NO VESSEL MARKERS · DISPLAY ONLY')}
   else if(value==='topo'){topo.addTo(map);setStatus('TOPOGRAPHIC · VESSEL MARKERS OFF')}
   else if(value==='satellite'){satellite.addTo(map);setStatus('SATELLITE · VESSEL MARKERS OFF')}
   else{street.addTo(map);setStatus('STREET MAP · VESSEL MARKERS OFF')}
