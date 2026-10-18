@@ -1,0 +1,37 @@
+name: Community CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  python-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile Python sources (no receiver hardware needed)
+        run: |
+          python - <<'PY'
+          import pathlib
+          import py_compile
+          paths = sorted(p for p in pathlib.Path(".").rglob("*.py") if ".git" not in p.parts)
+          for p in paths:
+              py_compile.compile(str(p), doraise=True)
+          print(f"PASS: compiled {len(paths)} Python source files")
+          PY
+      - name: Check repository excludes sensitive local files
+        run: |
+          python - <<'PY'
+          import pathlib, subprocess, sys
+          tracked = subprocess.check_output(["git", "ls-files"], text=True).splitlines()
+          risky = [x for x in tracked if (pathlib.Path(x).name.lower() in {".env", "id_rsa", "id_ed25519", "credentials.json"} or x.endswith((".pem", ".p12", ".key")))]
+          if risky:
+              print("FAIL: sensitive-looking tracked filenames:", *risky, sep="\n")
+              sys.exit(1)
+          print("PASS: no common private key or credentials filenames tracked")
+          PY

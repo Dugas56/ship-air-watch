@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a reproducible Ship & Air Watch problem
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Please remove passwords, tokens, exact private coordinates, and sensitive logs."
+  - type: input
+    id: version
+    attributes:
+      label: Release or commit
+      placeholder: "0.1.0 RC2"
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Receiver host
+      options: ["Raspberry Pi/Linux", "Windows (web or OTA only)", "macOS (web or OTA only)", "Browser client", "Other"]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Expected and actual behaviour
+    validations:
+      required: true

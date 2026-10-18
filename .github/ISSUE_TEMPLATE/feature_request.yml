@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest an improvement for the community or future Pro roadmap
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Suggested edition
+      options: ["Community", "Pro (proposed)", "Not sure"]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested solution
+    validations:
+      required: true
