@@ -1,0 +1,16 @@
+[Unit]
+Description=Shipwatch AIS-Catcher Service
+After=network.target
+StartLimitIntervalSec=0
+StartLimitBurst=0
+
+[Service]
+User=aiscatcher
+Group=aiscatcher
+SupplementaryGroups=plugdev dialout
+ExecStart=/usr/bin/AIS-catcher -E /etc/AIS-catcher/aiscatcher.json 0.0.0.0:{{AIS_SERVICE_PORT}}
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

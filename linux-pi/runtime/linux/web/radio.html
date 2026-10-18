@@ -1,0 +1,1060 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ship Watcher — Radio Listening Post</title>
+<style>
+:root{
+  --bg:#070b0d;--case:#1a2024;--case2:#11171a;--edge:#39454b;--text:#e7edf0;
+  --muted:#94a2a9;--green:#9dff78;--green2:#57c746;--amber:#ffcf5a;--red:#ff665e;
+  --blue:#63d5ff;--shadow:#000a
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;background:
+  radial-gradient(circle at 50% -20%,#26353d 0,#11191d 36%,#06090b 76%);
+  color:var(--text);font-family:Segoe UI,Arial,sans-serif
+}
+.wrap{max-width:1180px;margin:auto;padding:24px}
+.brand{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:14px}
+.brand h1{margin:0;font-size:24px;letter-spacing:.12em;text-transform:uppercase}
+.brand .sub{font-size:12px;letter-spacing:.18em;color:#94a8b2;text-transform:uppercase;margin-bottom:5px}
+.badges{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.badge{border:1px solid #46555c;background:#11191d;border-radius:999px;padding:6px 10px;font-size:11px;letter-spacing:.07em}
+.on{color:#76ef85}.off{color:#ff716a}
+
+.radio{
+  background:linear-gradient(150deg,#242d32 0,#171e22 45%,#0f1518 100%);
+  border:1px solid #435158;border-radius:20px;padding:22px;
+  box-shadow:0 26px 60px #000b,inset 0 1px #ffffff18,inset 0 -2px #0008
+}
+.face{display:grid;grid-template-columns:190px 1fr 190px;gap:22px;align-items:center}
+@media(max-width:820px){.face{grid-template-columns:1fr}.knobbox{order:2}.displaybox{order:1}}
+
+.knobbox{text-align:center}
+.knobtitle{font-size:12px;letter-spacing:.17em;color:#bac4c9;margin-bottom:8px}
+.knobwrap{width:144px;height:144px;margin:auto;position:relative}
+.scale{
+  position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 225deg,#4f626b 0deg,#4f626b 270deg,transparent 270deg);
+  -webkit-mask:radial-gradient(circle,#0000 59%,#000 61% 68%,#0000 70%);
+  mask:radial-gradient(circle,#0000 59%,#000 61% 68%,#0000 70%);
+  opacity:.58
+}
+.knob{
+  --angle:-135deg;
+  position:absolute;inset:18px;border-radius:50%;cursor:grab;user-select:none;touch-action:none;
+  background:
+    radial-gradient(circle at 35% 27%,#3f484d 0 8%,#1d2428 28%,#0c1114 66%,#030506 100%);
+  border:2px solid #4b565b;
+  box-shadow:0 9px 18px #000b,inset 0 3px 7px #ffffff16,inset 0 -5px 10px #000b
+}
+.knob:active{cursor:grabbing}
+.knob:after{
+  content:"";position:absolute;left:50%;top:8px;width:4px;height:34px;border-radius:3px;
+  background:#e6edf0;box-shadow:0 0 5px #fff8;
+  transform-origin:50% 45px;transform:translateX(-50%) rotate(var(--angle))
+}
+.knobvalue{font:700 18px Consolas,monospace;color:#e7ecee;margin-top:7px}
+.knobhint{font-size:10px;color:#778991;margin-top:2px}
+.ticknum{position:absolute;font:700 10px Consolas,monospace;color:#aebbc1;line-height:1;pointer-events:none;text-shadow:0 1px 2px #000}
+.tick0{left:12px;bottom:16px}.tick5{left:-2px;top:66px}.tick10{left:13px;top:16px}.tick15{left:43px;top:-2px}.tick20{left:69px;top:-7px}.tick25{right:39px;top:-2px}.tick30{right:10px;top:16px}.tick35{right:-3px;top:66px}.tick40{right:10px;bottom:16px}
+.stepper{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:7px}
+.stepbtn{width:38px;height:30px;border-radius:6px;border:1px solid #56636a;background:linear-gradient(#313b40,#151c20);color:#eef4f6;font:800 18px/1 Consolas,monospace;cursor:pointer;box-shadow:0 3px 0 #070a0c}
+.stepbtn:active{transform:translateY(2px);box-shadow:0 1px 0 #070a0c}
+
+.displaybox{
+  background:#080d08;border:6px solid #050708;border-radius:12px;padding:15px 18px 13px;
+  box-shadow:inset 0 0 22px #000,0 0 0 1px #4b5550,0 8px 20px #0008
+}
+.lcdtop{display:flex;justify-content:space-between;gap:10px;color:#5fae57;font:700 11px Consolas,monospace;letter-spacing:.1em}
+.freq{
+  text-align:center;font:700 clamp(46px,7.5vw,82px)/1.03 "Courier New",Consolas,monospace;
+  letter-spacing:.045em;color:var(--green);
+  text-shadow:0 0 5px #8dff6eaa,0 0 18px #57ff3877;margin:9px 0 5px;
+  font-variant-numeric:tabular-nums
+}
+.label{text-align:center;min-height:26px;color:#b6ff9f;font:700 17px Consolas,monospace;letter-spacing:.06em}
+.lcdline{height:1px;background:#254424;margin:10px 0 8px}
+.meterrow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font:700 11px Consolas,monospace;color:#74c66b}
+.meter{height:13px;display:flex;gap:3px;align-items:end}
+.seg{flex:1;min-width:7px;height:45%;background:#173318;border-radius:2px;box-shadow:inset 0 0 3px #000}
+.seg:nth-child(n+5){height:65%}.seg:nth-child(n+8){height:85%}.seg:nth-child(n+10){height:100%}
+.meter.rx .seg:nth-child(-n+8){background:#69e653;box-shadow:0 0 5px #67e45266}
+.meter.rx .seg:nth-child(n+9):nth-child(-n+10){background:#ffd35c}
+.meter.rx .seg:nth-child(n+11){background:#ff655e}
+.modeflag{color:#8cff72}
+
+.keys{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.key{
+  min-width:112px;padding:10px 14px;border-radius:7px;border:1px solid #4e5b61;color:#eef4f6;
+  background:linear-gradient(#303a3f,#171e22);box-shadow:0 4px 0 #080c0e,0 6px 10px #0007;
+  font-weight:800;letter-spacing:.04em;cursor:pointer
+}
+.key:active{transform:translateY(3px);box-shadow:0 1px 0 #080c0e}
+.key.primary{border-color:#3e879e;color:#d9f7ff}
+.key.bank{background:#303a40;color:#d5dce0;border-color:#647078}.key.bank.bank-selected{background:#63d5ff;color:#071019;border-color:#abebff;box-shadow:0 4px 0 #080c0e,0 0 14px #63d5ff55}
+.key.warn{border-color:#7f7047;color:#ffe7a6}
+
+.statusline{margin-top:16px;display:flex;justify-content:center;align-items:center;gap:9px;font-weight:800;letter-spacing:.07em}
+.rxled{width:12px;height:12px;border-radius:50%;background:#273136;box-shadow:0 0 0 4px #11191d}
+.statusline.active .rxled{background:#79ef64;box-shadow:0 0 13px #71ef5f}
+
+.audioarea{margin-top:16px}
+audio{width:100%;height:38px;filter:grayscale(.75) brightness(.9)}
+
+.lower{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-top:16px}
+@media(max-width:850px){.lower{grid-template-columns:1fr}}
+.panel{background:#11181c;border:1px solid #38454b;border-radius:14px;padding:16px;box-shadow:0 12px 24px #0007}
+.paneltitle{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#9baeb7;margin-bottom:11px}
+.scaninfo{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin:0 0 10px;padding:9px 10px;border:1px solid #2d3c43;border-radius:8px;background:#0b1114;font:700 12px Consolas,monospace}
+.scaninfo .tag{color:#7fdcff;letter-spacing:.08em}.scaninfo .now{color:#b6ff9f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.scaninfo .step{color:#ffd169}
+.channels{display:grid;gap:7px}
+.ch.scanning{border-color:#5fcf70;box-shadow:0 0 0 1px #5fcf7044,0 0 12px #5fcf7022}.ch.receiving{border-color:#ffd169;box-shadow:0 0 0 1px #ffd16955,0 0 14px #ffd16922}
+.ch{display:grid;grid-template-columns:100px 1fr auto;gap:9px;align-items:center;background:#0c1215;border:1px solid #28363d;border-radius:8px;padding:8px 10px}
+.ch b{font:700 15px Consolas,monospace;color:#b6ff9f}.ch span{color:#c3ccd0}.tinykey{padding:6px 9px;min-width:65px}
+.history{display:grid;gap:6px}.hist{display:grid;grid-template-columns:70px 85px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #243137;font-size:13px}
+.hist .f{font-family:Consolas,monospace;color:#ffd169}
+.mapmini{margin-top:14px;border:1px solid #31444d;border-radius:10px;overflow:hidden;background:#071019;box-shadow:inset 0 0 18px #000}
+.mapminihead{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#0c1418;border-bottom:1px solid #2b3b42;font-size:11px;letter-spacing:.11em;color:#9fb2bb;text-transform:uppercase}
+.mapmini iframe{display:block;width:100%;height:270px;border:0;background:#0a1114}
+.mapmini button{padding:5px 8px;min-width:auto;font-size:10px}
+.note{margin-top:10px;color:#7f919a;font-size:11px;text-align:center}
+
+.ch.held{border-color:#ffcf5a;background:#302817;box-shadow:0 0 10px #ffcf5a55}
+.ch.held button{background:#ffcf5a;color:#15130b;border-color:#ffe398;box-shadow:0 0 12px #ffcf5a88}
+
+.wrap{max-width:1540px}.face{grid-template-columns:160px minmax(260px,1fr) 160px 140px;gap:18px}
+.mapcontrols{padding:14px;background:#0b1318;border:1px solid #38454b;border-radius:12px}.mapcontrols .key{width:100%;min-width:0;margin:5px 0}.mapcontrols .selected{background:#63d5ff;color:#071019;border-color:#abebff}
+.lower{grid-template-columns:290px minmax(0,1fr);align-items:start}.history{max-height:650px;overflow:auto}.hist{grid-template-columns:65px 75px;gap:5px}.hist span:last-child{grid-column:1/-1}
+.mainpanels{min-width:0;display:grid;gap:16px}.maps{display:grid;grid-template-columns:1fr;gap:14px}.maps.both{grid-template-columns:1fr 1fr}.mapcard{min-width:0}.mapcard[hidden]{display:none}.mapcard iframe{width:100%;height:530px;border:0;display:block;border-radius:8px;background:#09121a}.maps.both iframe{height:460px}
+.harbourbody{display:grid;grid-template-columns:105px minmax(0,1fr);gap:12px}.watergauge{height:300px;width:32px;background:#071019;border:1px solid #46555c;border-radius:18px;position:relative;overflow:hidden;margin:18px auto}.waterfill{position:absolute;bottom:0;width:100%;height:0;background:linear-gradient(#9defff,#1584b1);transition:height .6s}.waterreadout{text-align:center}.waterreadout .note{text-align:left}.waterreadout #waterLevel{font-size:22px!important}.gaugemarks{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:7px 3px;font:10px Consolas;color:white;text-shadow:0 1px 3px #000}.mapstatus{color:#ffcf5a;font-size:12px;margin-bottom:10px}
+#voiceControl{background:#303a40;color:#d5dce0;border-color:#647078}#voiceControl.voice-on{background:#244d2c;border-color:#7cf594;color:#b7ffc5;box-shadow:0 0 12px #76ef8533}
+@media(max-width:1100px){.face{grid-template-columns:140px minmax(240px,1fr) 140px}.mapcontrols{grid-column:1/-1;display:flex;gap:8px;align-items:center}.mapcontrols .key{width:auto;flex:1}.mapcontrols .paneltitle{margin:0}.maps.both{grid-template-columns:1fr}}
+@media(max-width:820px){.face{grid-template-columns:1fr}.mapcontrols{grid-column:auto}.lower{grid-template-columns:1fr}.history{max-height:220px}.harbourbody{grid-template-columns:90px minmax(0,1fr)}.mapcard iframe{height:420px}.wrap{padding:12px}}
+
+.face{grid-template-columns:100px 150px minmax(260px,1fr) 150px 125px}
+.bankcontrols{display:grid;gap:9px}.bankcontrols .key{min-width:0;width:100%;padding:10px 7px;font-size:12px}.bankcontrols .paneltitle{text-align:center;margin:0}
+#voiceControl{position:relative;border-color:#75433e;background:#221819;color:#efcfcc}
+#voiceControl input{position:absolute;opacity:0;width:100%!important;height:100%!important;inset:0;cursor:pointer}
+.redswitch{display:inline-block;width:48px;height:26px;background:#351515;border:1px solid #a55b55;border-radius:20px;box-shadow:inset 0 2px 5px #000;position:relative}
+.redswitch:after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:linear-gradient(#ff8176,#b02319);transition:transform .15s;box-shadow:0 2px 4px #000}
+#voiceControl.voice-on{background:#4b1714;border-color:#ff7669;color:#fff0ed;box-shadow:0 0 12px #ff483344}
+.voice-on .redswitch:after{transform:translateX(22px);background:#ff5648;box-shadow:0 0 9px #ff453a}
+#voiceControl:focus-within{outline:2px solid #ffcf5a}
+@media(max-width:1200px){.face{grid-template-columns:90px 140px minmax(220px,1fr) 140px}.mapcontrols{grid-column:1/-1}}
+@media(max-width:900px){.face{grid-template-columns:90px 1fr 1fr}.displaybox{grid-column:2/4}.bankcontrols{grid-row:1/3}.mapcontrols{grid-column:1/-1}}
+@media(max-width:600px){.face{grid-template-columns:1fr 1fr}.bankcontrols{grid-column:1/-1;grid-row:auto;display:flex;flex-wrap:wrap;order:0}.bankcontrols .key{width:auto;flex:1}.displaybox{grid-column:1/-1}.mapcontrols{grid-column:1/-1}}
+.bankcontrols .bank-active{background:#63d5ff;color:#071019;border-color:#b5eeff;box-shadow:0 0 12px #63d5ff55}
+/* ===== Shipwatch classic ham-radio faceplate ===== */
+.radio{
+  border-radius:14px;
+  background:
+    linear-gradient(180deg,#34383a 0,#24292c 8%,#151a1d 52%,#0c1012 100%);
+  border:2px solid #596167;
+  box-shadow:
+    0 28px 65px #000c,
+    inset 0 2px 0 #ffffff20,
+    inset 0 -4px 0 #050708,
+    inset 14px 0 28px #0004,
+    inset -14px 0 28px #0004;
+}
+.radio:before{
+  content:"SHIP WATCHER  •  MULTI-BAND MONITOR";
+  display:block;
+  margin:-8px 0 15px;
+  text-align:center;
+  color:#aeb7bb;
+  font:700 10px/1.2 "Segoe UI",Arial,sans-serif;
+  letter-spacing:.28em;
+  text-shadow:0 1px #000;
+}
+.face{
+  grid-template-columns:112px 176px minmax(330px,1fr) 230px;
+  gap:18px;
+  align-items:stretch;
+}
+.controlstack{
+  display:grid;
+  grid-template-rows:1fr 1fr;
+  gap:12px;
+}
+.compactknob{
+  padding:10px 8px 8px;
+  border:1px solid #414a4f;
+  border-radius:10px;
+  background:linear-gradient(#202629,#101518);
+  box-shadow:inset 0 1px #ffffff10,0 5px 12px #0007;
+}
+.compactknob .knobwrap{width:108px;height:108px}
+.compactknob .knob{inset:15px}
+.compactknob .knob:after{top:7px;height:25px;transform-origin:50% 35px}
+.compactknob .ticknum{font-size:8px}
+.compactknob .tick0{left:7px;bottom:12px}
+.compactknob .tick5{left:-3px;top:49px}
+.compactknob .tick10{left:8px;top:10px}
+.compactknob .tick15{left:29px;top:-2px}
+.compactknob .tick20{left:50px;top:-6px}
+.compactknob .tick25{right:27px;top:-2px}
+.compactknob .tick30{right:6px;top:10px}
+.compactknob .tick35{right:-3px;top:49px}
+.compactknob .tick40{right:7px;bottom:12px}
+.compactknob .stepper{margin-top:4px;gap:6px}
+.compactknob .stepbtn{width:30px;height:25px;font-size:15px}
+.compactknob .knobvalue{font-size:14px}
+.compactknob .knobhint{font-size:9px}
+
+.tunebox{
+  position:relative;
+  min-height:100%;
+  padding:13px 10px 10px;
+  text-align:center;
+  border:1px solid #4d5559;
+  border-radius:10px;
+  background:
+    linear-gradient(180deg,#242a2d,#111619 60%,#090d0f);
+  box-shadow:inset 0 1px #ffffff12,0 8px 18px #0008;
+}
+.tunebox:before,.tunebox:after{
+  content:"";
+  position:absolute;
+  top:10px;width:7px;height:7px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#aab0b3,#3f4649 55%,#111);
+  box-shadow:0 1px 2px #000;
+}
+.tunebox:before{left:10px}.tunebox:after{right:10px}
+.tunelabel{
+  color:#d4dadd;
+  font:800 11px/1 "Segoe UI",Arial,sans-serif;
+  letter-spacing:.19em;
+  margin-bottom:8px;
+}
+.tunewrap{
+  width:190px;height:190px;
+  margin:0 auto 4px;
+  position:relative;
+}
+.tunering{
+  position:absolute;inset:0;border-radius:50%;
+  background:
+    repeating-conic-gradient(from -135deg,#c4c9cb 0 1deg,transparent 1deg 9deg);
+  -webkit-mask:radial-gradient(circle,#0000 0 76%,#000 77% 82%,#0000 83%);
+  mask:radial-gradient(circle,#0000 0 76%,#000 77% 82%,#0000 83%);
+  opacity:.72;
+}
+.tunering:after{
+  content:"";
+  position:absolute;inset:12px;border-radius:50%;
+  border:1px solid #525b60;
+}
+.tuneknob{
+  --angle:0deg;
+  position:absolute;inset:25px;border-radius:50%;
+  cursor:grab;touch-action:none;user-select:none;
+  background:
+    repeating-radial-gradient(circle at 50% 50%,#1e2528 0 4px,#121719 5px 8px),
+    radial-gradient(circle at 38% 30%,#565e62,#171c1f 48%,#080b0d 78%);
+  border:3px solid #60696d;
+  box-shadow:
+    0 12px 22px #000c,
+    inset 0 4px 7px #ffffff18,
+    inset 0 -8px 15px #000b,
+    0 0 0 5px #090d0f,
+    0 0 0 7px #444d51;
+}
+.tuneknob:active{cursor:grabbing}
+.tuneknob:after{
+  content:"";
+  position:absolute;
+  left:50%;top:12px;
+  width:5px;height:37px;border-radius:4px;
+  background:#f0d07b;
+  box-shadow:0 0 8px #ffc84c88;
+  transform-origin:50% 53px;
+  transform:translateX(-50%) rotate(var(--angle));
+}
+.tunelegend{
+  display:flex;justify-content:space-between;
+  padding:0 16px;
+  margin-top:-4px;
+  color:#8f9aa0;
+  font:700 9px Consolas,monospace;
+}
+.tunevalue{
+  margin-top:5px;
+  color:#ffd36b;
+  font:800 18px Consolas,monospace;
+  text-shadow:0 0 7px #ffca4a55;
+}
+.tunehint{font-size:9px;color:#87959c;margin-top:3px}
+
+.key,
+.stepbtn{
+  text-transform:uppercase;
+  border-radius:4px;
+  border:1px solid #596268;
+  background:
+    linear-gradient(180deg,#454d51 0,#2a3135 44%,#151a1d 48%,#0e1315 100%);
+  box-shadow:
+    0 4px 0 #050708,
+    0 7px 12px #0007,
+    inset 0 1px #ffffff24;
+  text-shadow:0 1px #000;
+}
+.key:hover{filter:brightness(1.12)}
+.key:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 #050708,inset 0 1px 4px #000;
+}
+.key.bank{
+  background:linear-gradient(#343a3d,#171c1f);
+  border-color:#555f64;
+}
+.key.bank.bank-selected,.bankcontrols .bank-active{
+  color:#141a0d;
+  background:linear-gradient(#d9ed9b,#8eaa47);
+  border-color:#e8f8b8;
+  box-shadow:0 4px 0 #050708,0 0 12px #bdda6d55;
+}
+.key.warn{
+  color:#ffe4a0;
+  background:linear-gradient(#554a2b,#282116);
+  border-color:#8c7842;
+}
+.recoverystrip{
+  margin-top:15px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  padding:11px;
+  border-top:1px solid #465056;
+  border-bottom:1px solid #090c0e;
+  background:#0e1316;
+  box-shadow:inset 0 1px #ffffff0c;
+}
+.recoverystrip .legend{
+  color:#909da3;
+  font:800 10px "Segoe UI",Arial,sans-serif;
+  letter-spacing:.15em;
+  margin-right:4px;
+}
+.key.recovery{
+  min-width:150px;
+  color:#e9e3c7;
+  background:linear-gradient(#3a3931,#1c1d19);
+  border-color:#6e6a54;
+}
+.key.recovery:before{
+  content:"";
+  display:inline-block;
+  width:7px;height:7px;border-radius:50%;
+  margin-right:8px;
+  background:#7e2e26;
+  box-shadow:0 0 0 2px #1a0e0c;
+}
+.key.recovery:not(:disabled):hover:before{
+  background:#ff6b5e;
+  box-shadow:0 0 8px #ff4b3d;
+}
+.tuningtrim{margin-top:12px}
+.tuningtrim .key{min-width:120px}
+.maptoolbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:0 0 11px;
+  padding-bottom:10px;
+  border-bottom:1px solid #2e3b41;
+}
+.maptoolbar .paneltitle{margin:0 auto 0 0}
+.maptoolbar .key{min-width:100px;padding:7px 11px;font-size:11px}
+.maptoolbar .selected{
+  color:#071019;
+  background:linear-gradient(#a9ebff,#54bedf);
+  border-color:#c6f3ff;
+}
+.mapcontrols{display:none!important}
+
+@media(max-width:1100px){
+  .face{grid-template-columns:108px 170px minmax(280px,1fr)}
+  .tunebox{grid-column:2/4}
+}
+@media(max-width:760px){
+  .face{grid-template-columns:1fr 1fr}
+  .bankcontrols{grid-column:1/-1;display:flex;flex-wrap:wrap}
+  .bankcontrols .paneltitle{width:100%}
+  .bankcontrols .key{flex:1}
+  .controlstack{grid-column:1/2}
+  .displaybox{grid-column:1/-1;grid-row:auto}
+  .tunebox{grid-column:2/3;grid-row:2}
+}
+@media(max-width:560px){
+  .face{grid-template-columns:1fr}
+  .controlstack,.displaybox,.tunebox{grid-column:1}
+  .controlstack{grid-template-columns:1fr 1fr;grid-template-rows:auto}
+  .tunewrap{width:170px;height:170px}
+}
+
+
+/* ===== Digital transceiver layer ===== */
+.displaybox{
+  position:relative;
+  overflow:hidden;
+  background:
+    linear-gradient(180deg,#06131b 0,#071018 46%,#050b10 100%);
+  border:5px solid #05080a;
+  box-shadow:
+    inset 0 0 34px #000,
+    0 0 0 1px #59636a,
+    0 8px 20px #0009;
+}
+.displaybox:before{
+  content:"";
+  position:absolute;inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent 49.8%,#ffffff08 50%,transparent 50.2%),
+    repeating-linear-gradient(0deg,#ffffff025 0 1px,transparent 1px 4px);
+  mix-blend-mode:screen;
+}
+.lcdtop{
+  position:relative;z-index:1;
+  color:#73cce8;
+  font-size:10px;
+}
+.freq{
+  position:relative;z-index:1;
+  color:#e8fbff;
+  text-shadow:0 0 6px #9beeffaa,0 0 18px #24aee077;
+  letter-spacing:.03em;
+}
+.label{
+  position:relative;z-index:1;
+  color:#8cecff;
+}
+.meterrow{position:relative;z-index:1}
+.scope{
+  position:relative;
+  z-index:1;
+  height:82px;
+  margin-top:10px;
+  border:1px solid #25434f;
+  background:
+    linear-gradient(180deg,#06131b,#041018),
+    repeating-linear-gradient(90deg,transparent 0 49px,#15313e 50px),
+    repeating-linear-gradient(0deg,transparent 0 19px,#15313e 20px);
+  overflow:hidden;
+  box-shadow:inset 0 0 16px #000b;
+}
+.scopegrid{
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 49px,#17404d55 50px),
+    repeating-linear-gradient(0deg,transparent 0 19px,#17404d55 20px);
+}
+.scopebars{
+  position:absolute;left:0;right:0;bottom:0;height:100%;
+  display:flex;align-items:flex-end;gap:2px;padding:0 4px;
+}
+.scopebar{
+  flex:1;
+  min-width:2px;
+  height:18%;
+  background:linear-gradient(#66e5ff,#0a72a6);
+  opacity:.75;
+  box-shadow:0 0 5px #36c9ff44;
+  transition:height .18s ease,opacity .18s ease;
+}
+.scope.rx .scopebar{
+  background:linear-gradient(#a9ff9d,#17a759);
+  box-shadow:0 0 6px #77ff9566;
+}
+.scopeline{
+  position:absolute;left:0;right:0;top:47%;
+  height:2px;
+  background:#55d9ff88;
+  box-shadow:0 0 7px #55d9ff88;
+}
+.scopelabels{
+  position:absolute;left:7px;right:7px;top:5px;
+  display:flex;justify-content:space-between;
+  color:#66a9be;
+  font:700 8px Consolas,monospace;
+}
+.softkeys{
+  position:relative;z-index:2;
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:5px;
+  margin-top:8px;
+}
+.softkey{
+  min-width:0;
+  padding:6px 4px;
+  border-radius:3px;
+  border:1px solid #3d5662;
+  background:linear-gradient(#26353d,#10181d);
+  color:#a7c4d0;
+  font:800 9px Consolas,monospace;
+  letter-spacing:.04em;
+  box-shadow:0 2px 0 #030608,inset 0 1px #ffffff15;
+  cursor:pointer;
+}
+.softkey.active{
+  color:#071014;
+  background:linear-gradient(#a8ecff,#54bad9);
+  border-color:#c8f4ff;
+  text-shadow:none;
+  box-shadow:0 2px 0 #030608,0 0 9px #55d8ff55;
+}
+.softkey:active{transform:translateY(1px);box-shadow:none}
+.softstatus{
+  position:relative;z-index:1;
+  display:flex;gap:10px;justify-content:center;
+  margin-top:6px;
+  color:#6c8791;
+  font:700 8px Consolas,monospace;
+  letter-spacing:.08em;
+}
+.softstatus .lit{color:#8befff}
+
+.tunebox{
+  background:
+    linear-gradient(180deg,#2b3033 0,#171c1f 50%,#0c1012 100%);
+}
+.tunebox .tunelabel{
+  font-size:12px;
+}
+.speakergrille{
+  width:116px;height:42px;
+  margin:8px auto 2px;
+  border:1px solid #3c4448;
+  border-radius:6px;
+  background:
+    radial-gradient(circle,#050708 0 2px,transparent 2.5px) 0 0/10px 10px,
+    linear-gradient(#1b2023,#0e1214);
+  box-shadow:inset 0 0 10px #000b;
+  opacity:.9;
+}
+.auxrow{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:5px;
+  margin-top:8px;
+}
+.auxbtn{
+  padding:5px 2px;
+  min-width:0;
+  border-radius:3px;
+  border:1px solid #4a5358;
+  background:linear-gradient(#30373a,#14191b);
+  color:#c3cbcf;
+  font:800 8px "Segoe UI",Arial,sans-serif;
+  letter-spacing:.05em;
+  box-shadow:0 2px 0 #050708;
+  cursor:pointer;
+}
+.auxbtn.active{
+  color:#fff2bf;
+  border-color:#8d7743;
+  background:linear-gradient(#574927,#241d10);
+  box-shadow:0 2px 0 #050708,0 0 8px #ffc74a44;
+}
+
+@media(max-width:760px){
+  .softkeys{grid-template-columns:repeat(3,1fr)}
+  .scope{height:70px}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div><div class="sub">Ship Watcher</div><h1>Radio Listening Post</h1></div>
+    <div class="badges"><span id="ais" class="badge">AIS</span><span id="adsb" class="badge">ADS-B</span><span id="mode" class="badge">MODE</span></div>
+  </div>
+
+  <div class="radio">
+    <div class="face">
+      <nav class="bankcontrols" aria-label="Receiver bank">
+        <div class="paneltitle">BANK</div>
+        <button id="airBank" class="key bank" aria-pressed="false" onclick="setBank('air')">AIR</button>
+        <button id="marineBank" class="key bank" aria-pressed="false" onclick="setBank('marine')">MARINE</button>
+        <button id="hamBank" class="key bank" aria-pressed="false" onclick="setBank('ham')">HAM</button>
+        <button id="frsBank" class="key bank" aria-pressed="false" onclick="setBank('frs')">FRS/GMRS</button>
+      </nav>
+
+      <div class="controlstack">
+        <div class="knobbox compactknob">
+          <div class="knobtitle">VOLUME</div>
+          <div class="knobwrap"><div class="scale"></div><div id="volKnob" class="knob"></div></div>
+          <div class="stepper"><button type="button" class="stepbtn" aria-label="Lower radio volume" onclick="setVolume(volume-1)">−</button><div id="volValue" class="knobvalue">5</div><button type="button" class="stepbtn" aria-label="Raise radio volume" onclick="setVolume(volume+1)">+</button></div>
+          <div class="knobhint">level</div>
+        </div>
+
+        <div class="knobbox compactknob">
+          <div class="knobtitle">SQUELCH</div>
+          <div class="knobwrap">
+            <div class="scale"></div>
+            <span class="ticknum tick0">0</span><span class="ticknum tick10">10</span><span class="ticknum tick20">20</span><span class="ticknum tick30">30</span><span class="ticknum tick40">40</span>
+            <div id="sqlKnob" class="knob"></div>
+          </div>
+          <div class="stepper"><button type="button" class="stepbtn" onclick="stepSquelch(-1)">−</button><div id="sqlValue" class="knobvalue">5</div><button type="button" class="stepbtn" onclick="stepSquelch(1)">+</button></div>
+          <div class="knobhint">0–40 detents</div>
+        </div>
+      </div>
+
+      <div class="displaybox">
+        <div class="lcdtop"><span>SHIP WATCHER RX-1</span><span><b id="bankFlag">AIR</b> • <b id="holdFlag">SCAN</b></span></div>
+        <div id="freq" class="freq">---.---</div>
+        <div id="label" class="label">AIRBAND SCANNER</div>
+        <div class="lcdline"></div>
+        <div class="meterrow">
+          <span>S</span>
+          <div id="meter" class="meter">
+            <i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i>
+            <i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i>
+          </div>
+          <span id="rxText">SQL</span>
+        </div>
+        <div id="scope" class="scope" aria-label="Receiver spectrum display">
+          <div class="scopegrid"></div>
+          <div class="scopelabels"><span>−25</span><span>−10</span><span>CENTER</span><span>+10</span><span>+25 kHz</span></div>
+          <div class="scopeline"></div>
+          <div id="scopeBars" class="scopebars"></div>
+        </div>
+        <div class="softkeys" aria-label="Display function controls">
+          <button type="button" class="softkey active" data-soft="scope">SCOPE</button>
+          <button type="button" class="softkey" data-soft="preamp">PREAMP</button>
+          <button type="button" class="softkey" data-soft="att">ATT</button>
+          <button type="button" class="softkey" data-soft="nb">NB</button>
+          <button type="button" class="softkey" data-soft="nr">NR</button>
+          <button type="button" class="softkey active" data-soft="agc">AGC</button>
+        </div>
+        <div class="softstatus"><span id="scopeMode" class="lit">SCOPE</span><span>5 kHz/DIV</span><span id="dspStatus">DSP READY</span></div>
+      </div>
+
+      <div class="tunebox">
+        <div class="tunelabel">MAIN TUNING</div>
+        <div class="tunewrap">
+          <div class="tunering"></div>
+          <div id="tuneKnob" class="tuneknob" role="dial" aria-label="Fine tuning dial" aria-valuemin="-10" aria-valuemax="10" aria-valuenow="0"></div>
+        </div>
+        <div class="tunelegend"><span>−10 kHz</span><span>0</span><span>+10 kHz</span></div>
+        <div id="tuneDialValue" class="tunevalue">0 kHz</div>
+        <div class="stepper"><button type="button" class="stepbtn" onclick="tuneDialStep(-1)">−</button><button type="button" class="stepbtn" onclick="fineTune(0,true)">0</button><button type="button" class="stepbtn" onclick="tuneDialStep(1)">+</button></div>
+        <div class="tunehint">turn = channel • HOLD = 1 kHz fine • wheel / drag</div>
+        <div class="speakergrille" aria-hidden="true"></div>
+        <div class="auxrow" aria-label="Local panel controls">
+          <button type="button" class="auxbtn" data-panel="rit">RIT</button>
+          <button type="button" class="auxbtn" data-panel="xit">XIT</button>
+          <button type="button" class="auxbtn" data-panel="mem">MEM</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="keys">
+
+
+      <label id="voiceControl" class="key" style="display:flex;align-items:center;gap:10px"><input id="voiceToggle" type="checkbox" role="switch" aria-label="Voice mode" onchange="toggleVoice(this)" style="width:22px;height:22px;accent-color:#63d5ff"><span class="redswitch" aria-hidden="true"></span><span id="voiceToggleText">VOICE OFF</span></label>
+      <button class="key" onclick="resume()">SCAN</button>
+      <button class="key warn" onclick="toggleMute()">MUTE</button>
+      <button class="key" onclick="startAudio()">LISTEN</button>
+      <button class="key" onclick="stopAudio()">STOP</button>
+    </div>
+
+    <div class="recoverystrip" aria-label="Receiver recovery">
+      <span class="legend">RECEIVER RECOVERY</span>
+      <button id="restartAircraft" class="key recovery" onclick="recoverReceiver('aircraft')">RESTART AIRCRAFT</button>
+      <button id="restartMarine" class="key recovery" disabled onclick="recoverReceiver('marine')">RESTART MARINE</button>
+      <span id="recoveryStatus" class="note" role="status">{{RECOVERY_NOTE}}</span>
+    </div>
+
+    <div class="keys tuningtrim" aria-label="Fine tuning">
+      <button id="tuneDown" class="key" onclick="fineTune(-1)">− 1 kHz</button>
+      <button id="tuneReset" class="key" onclick="fineTune(0,true)">RESET TUNING</button>
+      <button id="tuneUp" class="key" onclick="fineTune(1)">+ 1 kHz</button>
+    </div>
+    <div id="tuneInfo" class="note" role="status">Select a channel HOLD to fine tune. Range ±10 kHz.</div>
+    <div id="statusline" class="statusline"><span class="rxled"></span><span id="lamptext">SQUELCHED</span></div>
+    <div class="audioarea"><audio id="audio" controls preload="none"></audio></div>
+    <div class="note">{{VOICE_NOTE}}</div>
+  </div>
+
+  <div class="lower">
+    <aside class="panel"><div class="paneltitle">Last Heard</div><div id="history" class="history"><div class="note">No activity logged yet.</div></div><div class="note">Receiver activity may include static.</div></aside>
+    <div class="mainpanels">    <section class="panel">
+      <div class="paneltitle">Scan Bank — HOLD parks receiver on a frequency</div>
+      <div class="scaninfo"><span id="scanBank" class="tag">AIR SCAN</span><span id="scanNow" class="now">Waiting for scanner…</span><span id="scanStep" class="step">0/0</span></div>
+      <div id="channels" class="channels"></div>
+    </section>
+      <section class="panel">
+        <div class="maptoolbar" aria-label="Map display">
+          <div class="paneltitle">MAP DISPLAY</div>
+          <button id="showMarine" class="key selected" aria-pressed="true" onclick="selectMap('marine')">MARINE</button>
+          <button id="showAircraft" class="key" aria-pressed="false" onclick="selectMap('aircraft')">AIRCRAFT</button>
+          <button id="showBoth" class="key" aria-pressed="false" onclick="selectMap('both')">BOTH</button>
+        </div>
+        <div id="mapStatus" class="mapstatus" role="status">Waiting for receiver status…</div><div id="maps" class="maps">
+        <div id="marineCard" class="mapcard"><div class="paneltitle">Saint John Harbour · Live AIS</div><div class="harbourbody"><aside class="waterreadout"><div class="paneltitle" >Water level</div>
+<div id="waterLevel" style="font:700 28px Consolas,monospace;color:#63d5ff">Waiting for AIS data</div>
+<div class="note" style="text-align:left">Metres above local chart datum · not water depth</div>
+<div id="waterMeasured" class="note" style="text-align:left"></div>
+<div id="waterTrend" class="note" style="text-align:left"></div>
+<div id="waterStatus" class="note" role="status" style="text-align:left"></div>
+<button id="waterSpeak" type="button" class="key" style="border-radius:50%;width:76px;height:76px;min-width:76px;margin-top:10px" onclick="speakWater()" disabled>READ<br>LEVEL</button>
+<div id="waterGauge" class="watergauge" role="meter" aria-label="Water level in metres above local chart datum" aria-valuemin="0" aria-valuemax="10"><div id="waterFill" class="waterfill"></div><div class="gaugemarks"><span>10 m</span><span>7.5</span><span>5</span><span>2.5</span><span>0 m</span></div></div><div class="note">Station 3160016<br>Display scale 0–10 m</div></aside><iframe id="marineMap" src="harbour-map.html" title="Saint John Harbour live AIS map"></iframe></div></div>
+        <div id="aircraftCard" class="mapcard" hidden><div class="paneltitle">Aircraft · Live ADS-B</div><iframe id="aircraftMap" title="Live aircraft map" data-src="http://{{SHIPWATCH_HOST}}/tar1090/?shipwatch=compact-photo-20261006-2141&amp;sidebarWidth=50%25"></iframe></div>
+      </div></section>
+    </div>
+  </div>
+</div>
+
+<script>
+const banks={"air": [[118.5, "CYSJ Radio / MF"], [123.475, "Halifax FIC"], [124.3, "Moncton Centre"], [126.7, "Halifax FIC"], [135.5, "Moncton Centre"]], "marine": [[156.6, "Ch 12 — Saint John Harbour"], [156.7, "Ch 14 — Fundy Traffic"], [156.575, "Ch 71 — Fundy Traffic"], [156.8, "Ch 16 — Distress / Calling"], [161.8, "Ch 24 — Coast station"], [161.9, "Ch 26 — Coast station"]], "ham": [[147.27, "VE9SJN — Saint John"], [146.895, "Local club repeater"], [145.13, "Local club repeater"], [146.82, "VE9STJ — Saint John East"], [145.33, "VE9STM — Grove Hill"], [146.52, "Ham FM calling"]], "frs": [[462.5625, "FRS/GMRS Ch 1"], [462.5875, "FRS/GMRS Ch 2"], [462.6125, "FRS/GMRS Ch 3"], [462.6375, "FRS/GMRS Ch 4"], [462.6625, "FRS/GMRS Ch 5"], [462.6875, "FRS/GMRS Ch 6"], [462.7125, "FRS/GMRS Ch 7"], [462.55, "FRS/GMRS Ch 15"], [462.575, "FRS/GMRS Ch 16"], [462.6, "FRS/GMRS Ch 17"], [462.625, "FRS/GMRS Ch 18"], [462.65, "FRS/GMRS Ch 19"], [462.675, "FRS/GMRS Ch 20"], [462.7, "FRS/GMRS Ch 21"], [462.725, "FRS/GMRS Ch 22"]]};
+let currentBank="air";
+let channels=banks[currentBank];
+const $=id=>document.getElementById(id);
+let volume=5, muted=false, sqlTimer=null, scanIndex=0, scanTimer=null, latestState=null;
+
+
+function initDigitalPanel(){
+  const bars=$('scopeBars');
+  if(bars && !bars.children.length){
+    for(let i=0;i<42;i++){
+      const b=document.createElement('i');
+      b.className='scopebar';
+      b.style.height=(12+((i*17)%38))+'%';
+      bars.appendChild(b);
+    }
+  }
+  document.querySelectorAll('.softkey').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const key=btn.dataset.soft;
+      if(key==='scope'){
+        btn.classList.toggle('active');
+        $('scope').style.display=btn.classList.contains('active')?'block':'none';
+        $('scopeMode').textContent=btn.classList.contains('active')?'SCOPE':'SCOPE OFF';
+        return;
+      }
+      btn.classList.toggle('active');
+      $('dspStatus').textContent=key.toUpperCase()+(btn.classList.contains('active')?' ON':' OFF')+' • DISPLAY ONLY';
+    });
+  });
+  document.querySelectorAll('.auxbtn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      btn.classList.toggle('active');
+      $('dspStatus').textContent=btn.dataset.panel.toUpperCase()+(btn.classList.contains('active')?' ON':' OFF')+' • PANEL ONLY';
+    });
+  });
+}
+function paintScope(active){
+  const scope=$('scope');
+  if(!scope) return;
+  scope.classList.toggle('rx',!!active);
+  const bars=[...document.querySelectorAll('#scopeBars .scopebar')];
+  const center=Math.floor(bars.length/2);
+  bars.forEach((b,i)=>{
+    const dist=Math.abs(i-center);
+    let h=10+((i*23+(latestState?.scan_index||0)*11)%26);
+    if(active) h=Math.max(h,74-dist*4);
+    b.style.height=Math.max(8,Math.min(96,h))+'%';
+    b.style.opacity=active?Math.max(.35,1-dist/28):.65;
+  });
+}
+
+function startScanDisplay(){
+  clearInterval(scanTimer);
+}
+function drawChannels(){
+  $('channels').innerHTML=channels.map(c=>'<div class="ch" data-freq="'+c[0].toFixed(4)+'"><b>'+c[0].toFixed(4)+'</b><span>'+c[1]+'</span><button class="key tinykey" onclick="hold('+c[0]+')">HOLD</button></div>').join('');
+}
+const PI='http://{{SHIPWATCH_HOST}}:{{RADIO_PORT}}';
+const VOICE_SHARED={{VOICE_SHARED_JS}};
+async function api(url,opt){let r=await fetch(PI+url,opt);return r.json();}
+
+function knobAngle(value,min,max){return -135+((value-min)/(max-min))*270}
+function paintKnob(id,value,min,max){
+  $(id).style.setProperty('--angle',knobAngle(value,min,max)+'deg');
+}
+function setVolume(v){
+  volume=Math.max(0,Math.min(100,Math.round(v)));
+  $('volValue').textContent=volume;
+  paintKnob('volKnob',volume,0,100);
+  $('audio').volume=volume/100;
+}
+function queueSquelch(v){
+  v=Math.max(0,Math.min(40,Math.round(v)));
+  const old=parseInt($('sqlValue').textContent||'5');
+  if(v===old) return;
+  $('sqlValue').textContent=v;
+  paintKnob('sqlKnob',v,0,40);
+  clearTimeout(sqlTimer);
+  sqlTimer=setTimeout(()=>setSq(v),180);
+}
+function stepSquelch(delta){
+  const v=parseInt($('sqlValue').textContent||'5');
+  queueSquelch(v+delta);
+}
+function bindKnob(id,getValue,setValue,min,max){
+  const el=$(id);
+  el.addEventListener('wheel',e=>{e.preventDefault();setValue(getValue()+(e.deltaY<0?1:-1))},{passive:false});
+  el.addEventListener('pointerdown',e=>{
+    e.preventDefault();el.setPointerCapture(e.pointerId);
+    const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    const move=ev=>{
+      let deg=Math.atan2(ev.clientY-cy,ev.clientX-cx)*180/Math.PI+90;
+      if(deg<0)deg+=360;
+      let a=deg;
+      if(a>225 && a<315) a=(a<270?225:315);
+      let signed=a>180?a-360:a;
+      signed=Math.max(-135,Math.min(135,signed));
+      setValue(min+((signed+135)/270)*(max-min));
+    };
+    const up=ev=>{el.releasePointerCapture(ev.pointerId);el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',up)};
+    el.addEventListener('pointermove',move);el.addEventListener('pointerup',up);
+  });
+}
+
+function selectMap(view){
+  $('maps').classList.toggle('both',view==='both');
+  $('marineCard').hidden=view==='aircraft';$('aircraftCard').hidden=view==='marine';
+  [['showMarine','marine'],['showAircraft','aircraft'],['showBoth','both']].forEach(([id,v])=>{$(id).classList.toggle('selected',view===v);$(id).setAttribute('aria-pressed',String(view===v));});
+  if(view!=='marine'&&!$('aircraftMap').getAttribute('src')) $('aircraftMap').src=$('aircraftMap').dataset.src;
+  $('marineMap').contentWindow.postMessage({type:'shipwatch-resize'},location.origin);
+}
+
+let recoveryBusy=false;
+async function recoverReceiver(receiver){
+ if(recoveryBusy) return;
+ if(receiver==='marine'&&VOICE_SHARED&&(!latestState||latestState.mode==='voice')){ $('recoveryStatus').textContent='Turn Voice OFF before restarting AIS.';return; }
+ if(!confirm('Restart '+(receiver==='marine'?'marine AIS':'aircraft ADS-B')+' receiver? Reception will pause briefly.')) return;
+ recoveryBusy=true; ['restartAircraft','restartMarine'].forEach(id=>$(id).disabled=true);$('voiceToggle').disabled=true;
+ $('recoveryStatus').textContent='Restarting '+receiver+' receiver…';
+ try{
+  const r=await api('/api/restart?receiver='+receiver,{method:'POST',headers:{'X-ShipWatch-Recovery':'confirmed'}});
+  if(!r.ok)throw new Error(r.error||'Restart failed');
+  $('recoveryStatus').textContent=r.message;
+  if(receiver==='aircraft'&&$('aircraftMap').src) $('aircraftMap').src=$('aircraftMap').dataset.src;
+ }catch(e){$('recoveryStatus').textContent=e.message;}
+ finally{recoveryBusy=false;$('voiceToggle').disabled=false;await refresh();}
+}
+
+let modeBusy=false;
+async function setMode(m){
+  if(m==='map') stopAudio();
+  const r=await api('/api/mode?set='+m,{method:'POST'});
+  if(!r.ok) throw new Error('Mode change failed');
+  await refresh();
+  if(m==='voice') setTimeout(startAudio,500);
+  else refreshWater();
+}
+async function toggleVoice(el){
+  if(modeBusy||recoveryBusy) return;
+  modeBusy=true;el.disabled=true;
+  try{await setMode(el.checked?'voice':'map');}
+  catch(e){alert(e.message);await refresh();}
+  finally{modeBusy=false;el.disabled=false;}
+}
+async function openAircraftMap(){
+  await setMode('map');
+  selectMap('aircraft');
+}
+async function setBank(b){
+  await api('/api/bank?set='+b,{method:'POST'});
+  currentBank=b;channels=banks[b];scanIndex=0;drawChannels();$('scanBank').textContent=b.toUpperCase()+' SCAN';
+  if(latestState && latestState.mode==='voice') restartAudio();
+  refresh();
+}
+let tuningBusy=false;
+let tuneDialOffset=0;
+function paintTuneDial(offset){
+  tuneDialOffset=Math.max(-10,Math.min(10,Math.round(Number(offset)||0)));
+  const angle=tuneDialOffset*13.5;
+  $('tuneKnob').style.setProperty('--angle',angle+'deg');
+  $('tuneDialValue').textContent=(tuneDialOffset>0?'+':'')+tuneDialOffset+' kHz';
+  $('tuneKnob').setAttribute('aria-valuenow',String(tuneDialOffset));
+}
+async function tuneDialStep(step){
+  if(!(latestState&&latestState.mode==='voice')){
+    $('tuneInfo').textContent='Turn Voice ON to use the main tuning dial.';
+    return;
+  }
+  if(latestState.hold){
+    await fineTune(step);
+    return;
+  }
+  const list=banks[currentBank]||[];
+  if(!list.length) return;
+  const current=Number(latestState.current_freq||list[0][0]);
+  let idx=list.reduce((best,c,i)=>Math.abs(c[0]-current)<Math.abs(list[best][0]-current)?i:best,0);
+  idx=(idx+(step>0?1:-1)+list.length)%list.length;
+  await hold(list[idx][0]);
+  await refresh();
+}
+function bindTuneDial(){
+  const el=$('tuneKnob');
+  el.addEventListener('wheel',e=>{
+    e.preventDefault();
+    tuneDialStep(e.deltaY<0?1:-1);
+  },{passive:false});
+  let lastAngle=null;
+  const angleFor=ev=>{
+    const r=el.getBoundingClientRect();
+    const cx=r.left+r.width/2,cy=r.top+r.height/2;
+    return Math.atan2(ev.clientY-cy,ev.clientX-cx)*180/Math.PI;
+  };
+  el.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    lastAngle=angleFor(e);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(lastAngle===null||!el.hasPointerCapture(e.pointerId)) return;
+    const a=angleFor(e);
+    let delta=a-lastAngle;
+    if(delta>180)delta-=360;
+    if(delta<-180)delta+=360;
+    if(Math.abs(delta)>=10){
+      tuneDialStep(delta>0?1:-1);
+      lastAngle=a;
+    }
+  });
+  const done=e=>{
+    if(el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);
+    lastAngle=null;
+  };
+  el.addEventListener('pointerup',done);
+  el.addEventListener('pointercancel',done);
+}
+async function fineTune(step,reset=false){
+  if(tuningBusy) return;
+  tuningBusy=true;
+  try{
+    const r=await api('/api/tune?step='+step+(reset?'&reset=1':''),{method:'POST'});
+    if(!r.ok) throw new Error(r.error||'Tuning failed');
+    restartAudio();await refresh();
+  }catch(e){$('tuneInfo').textContent=e.message;}
+  finally{tuningBusy=false;}
+}
+async function hold(f){await api('/api/hold?freq='+f,{method:'POST'});restartAudio();}
+async function resume(){await api('/api/hold?clear=1',{method:'POST'});restartAudio();}
+async function setSq(v){
+  await api('/api/squelch?value='+v,{method:'POST'});
+  restartAudio();
+}
+function startAudio(){
+  let a=$('audio');a.src=PI+'/air.mp3?x='+Date.now();a.volume=volume/100;a.muted=muted;a.play().catch(()=>{});
+}
+function stopAudio(){let a=$('audio');a.pause();a.removeAttribute('src');a.load();}
+function restartAudio(){let a=$('audio');if(!a.paused){stopAudio();setTimeout(startAudio,350)}}
+function toggleMute(){muted=!muted;$('audio').muted=muted;event.target.textContent=muted?'UNMUTE':'MUTE';}
+
+
+function paintHeldChannel(s){
+  const base=s.tune_base||s.hold;
+  document.querySelectorAll('.ch').forEach(row=>{
+    const selected=s.mode==='voice' && !!s.hold && Math.abs(Number(row.dataset.freq)-base)<0.0001;
+    row.classList.toggle('held',selected);
+    const button=row.querySelector('button');
+    button.textContent=selected?'HELD':'HOLD';
+    button.setAttribute('aria-pressed',selected?'true':'false');
+  });
+}
+
+async function refresh(){
+  try{
+    let s=await api('/api/status'); latestState=s; $('restartAircraft').disabled=recoveryBusy; $('restartMarine').disabled=recoveryBusy||modeBusy||(VOICE_SHARED&&s.mode==='voice');
+    const canTune=s.mode==='voice' && !!s.hold;
+    ['tuneDown','tuneReset','tuneUp'].forEach(id=>$(id).disabled=!canTune);
+    const offset=s.tune_offset_khz||0;
+    paintTuneDial(offset);
+    $('tuneInfo').textContent=canTune?'Reference '+(s.tune_base||s.hold).toFixed(4)+' MHz • Offset '+(offset>0?'+':'')+offset+' kHz':'Select a channel HOLD to fine tune. Range ±10 kHz.';
+    if(currentBank!==(s.bank||'air')){currentBank=s.bank||'air';channels=banks[currentBank];drawChannels();}
+    currentBank=s.bank||'air';channels=banks[currentBank];$('bankFlag').textContent=currentBank.toUpperCase();
+    ['air','marine'].forEach(bank=>{const button=$(bank+'Bank');const selected=s.bank===bank;button.classList.toggle('bank-selected',selected);button.setAttribute('aria-pressed',String(selected));});
+    paintHeldChannel(s);
+    ['air','marine','ham','frs'].forEach(bank=>{const button=$(bank+'Bank');button.classList.toggle('selected',s.bank===bank);button.classList.toggle('bank-active',s.bank===bank);button.setAttribute('aria-pressed',String(s.bank===bank));});
+    $('scanBank').textContent=(s.bank==='frs'?'FRS/GMRS':s.bank.toUpperCase())+' SCAN';
+
+    if(!modeBusy) $('voiceToggle').checked=s.mode==='voice';
+    $('voiceToggleText').textContent=s.mode==='voice'?'VOICE ON':'VOICE OFF';
+    $('voiceControl').classList.toggle('voice-on',s.mode==='voice');
+    $('mapStatus').textContent=(s.mode==='voice'&&VOICE_SHARED)?'AIS paused while voice is ON · Last positions remain visible':s.ais==='online'?'AIS receiver online · Maps update automatically':'AIS receiver offline · Last positions remain visible';
+    $('marineMap').contentWindow.postMessage({type:'shipwatch-mode',voice:VOICE_SHARED&&s.mode==='voice'},location.origin);
+    $('mode').textContent='MODE: '+s.mode.toUpperCase();$('mode').className='badge '+(s.mode==='voice'?'on':'');
+    $('ais').textContent='AIS: '+s.ais.toUpperCase();$('ais').className='badge '+(s.ais==='online'?'on':'off');
+    $('adsb').textContent='ADS-B: '+s.readsb.toUpperCase();$('adsb').className='badge '+(s.readsb==='online'?'on':'off');
+    $('sqlValue').textContent=s.squelch;paintKnob('sqlKnob',s.squelch,0,40);
+    if(s.current_freq && s.scanner_running){$('freq').textContent=s.current_freq.toFixed(4);$('label').textContent=s.current_label;$('holdFlag').textContent=s.hold?'HOLD':(s.activity?'RX':'SCAN');$('scanNow').textContent=(s.activity?'RECEIVING ':(s.hold?'HOLD ':'SCANNING '))+s.current_freq.toFixed(4)+' MHz — '+s.current_label;document.querySelectorAll('.ch').forEach(x=>x.classList.remove('scanning','receiving'));const row=document.querySelector('.ch[data-freq="'+(s.tune_base||s.current_freq).toFixed(4)+'"]');if(row)row.classList.add(s.activity?'receiving':'scanning');}
+    else if(s.hold){$('freq').textContent=s.hold.toFixed(4);$('label').textContent='HOLD';$('holdFlag').textContent='HOLD';}
+    $('scanStep').textContent=(s.scan_index||0)+'/'+(s.scan_count||channels.length);
+    if(!s.scanner_running){
+      $('freq').textContent='---.---';
+      $('label').textContent=s.mode==='map'?'MAP MODE · VOICE OFF':'SCANNER STOPPED';
+      $('scanNow').textContent=s.scanner_error||'Waiting for receiver';
+      document.querySelectorAll('.ch').forEach(x=>x.classList.remove('scanning','receiving'));
+    }
+    $('statusline').className='statusline '+(s.activity?'active':'');$('lamptext').textContent=s.activity?'RECEIVING':'SQUELCHED';
+    $('meter').className='meter '+(s.activity?'rx':'');$('rxText').textContent=s.activity?'RX':'SQL';paintScope(s.activity);
+    if(s.last_heard.length){$('history').innerHTML=s.last_heard.map(x=>'<div class="hist"><span>'+x.time+'</span><span class="f">'+x.freq.toFixed(4)+'</span><span>'+x.label+'</span></div>').join('');}
+  }catch(e){$('restartMarine').disabled=true;document.querySelectorAll('.ch.held').forEach(row=>{row.classList.remove('held');const b=row.querySelector('button');b.textContent='HOLD';b.setAttribute('aria-pressed','false');});}
+}
+
+drawChannels();
+initDigitalPanel();
+setVolume(5);paintKnob('sqlKnob',5,0,40);
+bindKnob('volKnob',()=>volume,setVolume,0,100);
+bindKnob('sqlKnob',()=>parseInt($('sqlValue').textContent||'5'),queueSquelch,0,40);
+bindTuneDial();paintTuneDial(0);
+startScanDisplay();refresh();setInterval(refresh,300);
+
+let waterSpeech='';
+const waterTime=d=>d.toLocaleTimeString('en-CA',{timeZone:'America/Halifax',hour:'numeric',minute:'2-digit'});
+function measurementDate(r){
+ const m=r.message,received=new Date(r.timestamp*1000);
+ if(!Number.isInteger(m.day)||m.day<1||m.day>31||m.hour>23||m.minute>59) return null;
+ let d=new Date(Date.UTC(received.getUTCFullYear(),received.getUTCMonth(),m.day,m.hour,m.minute));
+ if(d.getTime()>received.getTime()+86400000) d=new Date(Date.UTC(received.getUTCFullYear(),received.getUTCMonth()-1,m.day,m.hour,m.minute));
+ return d;
+}
+async function refreshWater(){
+ try{
+  const response=await fetch(PI+'/api/waterlevel?_='+Date.now(),{cache:'no-store'});
+  const data=await response.json();
+  if(!response.ok||!data.ok) throw new Error('AIS feed unavailable; switch to map mode to receive updates.');
+  if(!data.reports.length) throw new Error('No water-level report currently available.');
+  const r=data.reports[0],m=r.message,level=Number(m.waterlevel),measured=measurementDate(r);
+  const age=Math.max(0,Math.floor((Date.now()-(measured?measured.getTime():r.timestamp*1000))/60000));
+  if(!Number.isFinite(level)) throw new Error('Water-level value unavailable.');
+  $('waterLevel').textContent=level.toFixed(2)+' m';
+  $('waterFill').style.height=Math.max(0,Math.min(100,level*10))+'%';
+  $('waterGauge').setAttribute('aria-valuenow',String(Math.max(0,Math.min(10,level))));
+  $('waterGauge').setAttribute('aria-valuetext',level.toFixed(2)+' metres above local chart datum');
+  $('waterMeasured').textContent=(measured?'Measured '+waterTime(measured)+' · ':'Measurement time unavailable · ')+'Received '+waterTime(new Date(r.timestamp*1000));
+  const previous=data.reports[1];
+  const diff=previous?level-Number(previous.message.waterlevel):null;
+  const trend=diff===null?'':Math.abs(diff)<0.01?'Little change between latest reports':diff>0?'Increasing between latest reports':'Decreasing between latest reports';
+  $('waterTrend').textContent=trend?trend+' (calculated from received levels)':'Trend unavailable';
+  $('waterStatus').textContent=age>15?'Older reading: '+age+' minutes old':'Updated from received AIS data · '+age+' minutes old';
+  waterSpeech='Station 3160016 reports a water level of '+level.toFixed(2)+' metres above local chart datum. '+(measured?'Measured at '+waterTime(measured)+'. ':'')+(age>15?'This reading is '+age+' minutes old. ':'')+trend+'.';
+  $('waterSpeak').disabled=!('speechSynthesis' in window);
+ }catch(e){
+  $('waterStatus').textContent=e.message+' Any displayed level is the last fetched reading.';
+  $('waterSpeak').disabled=true;
+ }
+}
+function speakWater(){
+ if(!waterSpeech || $('waterSpeak').disabled) return;
+ speechSynthesis.cancel();
+ const speech=new SpeechSynthesisUtterance(waterSpeech);speech.lang='en-CA';speech.volume=volume/100;
+ speechSynthesis.speak(speech);
+}
+refreshWater();setInterval(refreshWater,10000);
+</script>
+</body></html>

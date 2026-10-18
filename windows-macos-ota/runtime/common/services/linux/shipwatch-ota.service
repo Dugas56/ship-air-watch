@@ -1,0 +1,19 @@
+[Unit]
+Description=Shipwatch outbound OTA check
+After=network-online.target ais-catcher.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 /opt/shipwatch/ota/shipwatch_ota_agent.py --config /etc/shipwatch-ota/agent.json
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/etc/AIS-catcher /etc/shipwatch-ota
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

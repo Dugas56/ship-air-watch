@@ -1,0 +1,156 @@
+{
+  "schema_version": 2,
+  "generated": "2026-10-11",
+  "files": [
+    {
+      "path": "common/ota-release-config.json",
+      "sha256": "711f5807c2a518c6e26c44756c6ed2517604da7e34bf032f8901f201a100a5fb",
+      "size": 144
+    },
+    {
+      "path": "common/ota-release-config.sample.json",
+      "sha256": "1f1f09c6688980f6a2989dc46d23a52df48be6b3a542f7871dc9979b37c79efe",
+      "size": 135
+    },
+    {
+      "path": "common/requirements-ota.txt",
+      "sha256": "fe2adca53db5f8cf2b5ff5d48da6e1c92af6f25da1856f217da1ab766579f395",
+      "size": 15
+    },
+    {
+      "path": "common/services/linux/shipwatch-ota.service",
+      "sha256": "cad375f396bbdda0de80b82007e4c755b08180aaade0172937ea6018d1f654b3",
+      "size": 490
+    },
+    {
+      "path": "common/services/linux/shipwatch-ota.timer",
+      "sha256": "18c3984085dc5f427169808f8dcdd7d233921656a2e477efba1a338311624cd4",
+      "size": 188
+    },
+    {
+      "path": "common/services/macos/com.shipwatch.ota.plist.template",
+      "sha256": "2a20a476bb6a837ce19773750baf15fd0fc5e4368466c22bce43eb5ef2653240",
+      "size": 749
+    },
+    {
+      "path": "common/services/macos/Install-ShipwatchOtaLaunchDaemon.sh",
+      "sha256": "037ef882b2e20428c153bcb2c1f3baacf884766ac284d8e18a5794ecdbaca2de",
+      "size": 1521
+    },
+    {
+      "path": "common/services/windows/Install-ShipwatchOtaTask.ps1",
+      "sha256": "efe644b8aaeb8d11d83c26b04040bceef8449e4a567f892fb987f12b344b105a",
+      "size": 1763
+    },
+    {
+      "path": "common/shipwatch-air.py",
+      "sha256": "4070503e5376bbeee858bb5869a622001a4c890131bb69a1c360b9a169883ca2",
+      "size": 38739
+    },
+    {
+      "path": "common/shipwatch-history.py",
+      "sha256": "09c310a9b00f28145b3289d08453cc53a57313bf8ca81428ad9649dd76fb0a7d",
+      "size": 15026
+    },
+    {
+      "path": "common/shipwatch_ota_agent.py",
+      "sha256": "bae576ff0ec21f323680c9cd490a137acece19216da1f41878fd7e527cd74538",
+      "size": 17934
+    },
+    {
+      "path": "linux/component-sources.json",
+      "sha256": "3a27bf220ccd1e9f9198c518057dc067c3893dfa40b9f6426457f323cf446ac2",
+      "size": 2036
+    },
+    {
+      "path": "linux/packages/ais-catcher_0.70~3459-g10781d37_arm64.deb",
+      "sha256": "0f0762f5cb6c0ccb153fca07aa42ac247e8fffb5ac55120a64c46237a5780961",
+      "size": 1433116
+    },
+    {
+      "path": "linux/runtime-manifest.json",
+      "sha256": "016a33309a19715bb92086263c077eda2342d0ecd74ecd03b5dea17bb2f458a1",
+      "size": 1468
+    },
+    {
+      "path": "linux/shipwatch-health.sh",
+      "sha256": "9901bb0ef2bad38ded01c3c56edc1398405737f11550dff753347bcf699ef933",
+      "size": 934
+    },
+    {
+      "path": "linux/templates/config/aiscatcher.json.template",
+      "sha256": "8ee7f9ba264ad932966254ba9fe838919675d347dd50621a0191b823f19726ca",
+      "size": 882
+    },
+    {
+      "path": "linux/templates/config/readsb.default.template",
+      "sha256": "8574fe3762beaa7d80f42ba59aa0007b9b045c7b3b2997c8b113f9b2abeeb8d5",
+      "size": 635
+    },
+    {
+      "path": "linux/templates/systemd/ais-catcher.service.template",
+      "sha256": "1290ab765e41149f3cd384fb79c944d0479a9dcf911a00b826a88df4bf0992af",
+      "size": 355
+    },
+    {
+      "path": "linux/templates/systemd/shipwatch-air.service.template",
+      "sha256": "24397367551961e306f6ac783024b2058d9c8f33ac2d5506350db00671dd6a3d",
+      "size": 361
+    },
+    {
+      "path": "linux/web/.keep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "linux/web/harbour-map.html",
+      "sha256": "f474f55afde3d9d20a70ae2f0ee5e9df8717e717385af8ab437576ea1db118fb",
+      "size": 5958
+    },
+    {
+      "path": "linux/web/index.html",
+      "sha256": "09219863978581fb0de6e07927d3ebf33ac8fa5930dae11d2c187dd53b495698",
+      "size": 6238
+    },
+    {
+      "path": "linux/web/radio.html",
+      "sha256": "689b28dd7b7d7c0f46b76bcc21e42e995dd2fe76a0ed20d9f5dac26a6fd059a1",
+      "size": 51069
+    },
+    {
+      "path": "reference/shipwatch-air.reference.py",
+      "sha256": "8fa4cdf281624fd3e5639147d9f2fc395822e9b8f7300edc49fdef82e9416bbd",
+      "size": 35147
+    },
+    {
+      "path": "web/ais-proxy.php",
+      "sha256": "48e9202ad23a9a9fb072c41af499e6f22b3bb8a18fe070b03f20145d6cc50389",
+      "size": 561
+    },
+    {
+      "path": "web/audio-proxy.php",
+      "sha256": "103354b48c8807e001a3ecb17ba6eddf15a1540b38724ab998c85b7b3b5016aa",
+      "size": 357
+    },
+    {
+      "path": "web/harbour-map.html",
+      "sha256": "cac7a2e10b357a13449d0f5a3b08a076960c2ac8b3c9788d773f04f6fa29fae9",
+      "size": 5900
+    },
+    {
+      "path": "web/radio-proxy.php",
+      "sha256": "037333163234a126cb175652726a951e6c873a8bdd87b8199f5d2d13df1e926f",
+      "size": 1543
+    },
+    {
+      "path": "web/radio.html",
+      "sha256": "76434a6982590d43170b770975eb97e68f9a1711f3433c3e72df820141edccaf",
+      "size": 34285
+    },
+    {
+      "path": "web/waterlevel-proxy.php",
+      "sha256": "7cd9725a21cc266dbb440ab131d055d9363c52e1f6e4b0aa33f67eef79b79f5c",
+      "size": 831
+    }
+  ]
+}

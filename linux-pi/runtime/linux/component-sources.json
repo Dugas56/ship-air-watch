@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "reference_date": "2026-10-07",
+  "components": {
+    "readsb": {
+      "upstream": "https://github.com/wiedehopf/readsb.git",
+      "reference_commit": "cc0d099758be794598026ec1eb9de178a5d4e53b",
+      "reference_version": "3.16.15",
+      "install_mode": "build_then_strip_build_deps",
+      "runtime_binary": "/usr/bin/readsb",
+      "runtime_packages": [
+        "librtlsdr0",
+        "libusb-1.0-0",
+        "libncurses6",
+        "libtinfo6",
+        "zlib1g",
+        "libzstd1"
+      ],
+      "temporary_build_packages": [
+        "gcc",
+        "make",
+        "libc6-dev",
+        "libusb-1.0-0-dev",
+        "librtlsdr-dev",
+        "libncurses-dev",
+        "zlib1g-dev",
+        "libzstd-dev",
+        "pkg-config"
+      ]
+    },
+    "tar1090": {
+      "upstream": "https://github.com/wiedehopf/tar1090",
+      "reference_commit": "e5a017021de1a50a5bfb7d59040b141a3fc9a158",
+      "reference_version": "3.14.1814",
+      "install_mode": "managed_upstream_install",
+      "runtime_path": "/usr/local/share/tar1090"
+    },
+    "ais_catcher": {
+      "upstream": "https://github.com/jvde-github/AIS-catcher",
+      "reference_version": "0.70~3459-g10781d37",
+      "install_mode": "bundled_arm64_package_or_provider",
+      "runtime_binary": "/usr/bin/AIS-catcher",
+      "package_name": "ais-catcher",
+      "bundled_arm64_sha256": "0f0762f5cb6c0ccb153fca07aa42ac247e8fffb5ac55120a64c46237a5780961",
+      "notes": [
+        "ARM64 reference package is bundled with Shipwatch.",
+        "Other architectures require an architecture-specific provider/package.",
+        "Reference package bundles RTL-SDR runtime libraries under /usr/lib/ais-catcher."
+      ]
+    }
+  },
+  "slim_install_policy": {
+    "temporary_build_dependencies": true,
+    "remove_only_packages_added_by_shipwatch": true,
+    "remove_build_dependencies_after_success": true,
+    "keep_source_trees": false,
+    "keep_runtime_libraries": true,
+    "verify_before_cleanup": true,
+    "rollback_on_failed_health_check": true
+  }
+}

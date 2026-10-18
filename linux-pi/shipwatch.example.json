@@ -1,0 +1,88 @@
+{
+  "schema_version": 2,
+  "station": {
+    "name": "Shipwatch",
+    "location_label": "",
+    "latitude": null,
+    "longitude": null
+  },
+  "installation": {
+    "platform": "",
+    "mode": "local",
+    "application_path": "",
+    "config_path": "",
+    "data_path": "",
+    "log_path": "",
+    "web_path": "",
+    "backup_path": "",
+    "run_at_boot": true
+  },
+  "ssh": {
+    "enabled": false,
+    "host": "",
+    "alias": "",
+    "port": 22,
+    "username": "",
+    "auth_method": "key",
+    "key_path": ""
+  },
+  "receiver_layout": "auto",
+  "receivers": {
+    "adsb": {
+      "enabled": true,
+      "type": "rtlsdr",
+      "serial": "",
+      "gain": "auto",
+      "ppm": 0,
+      "dedicated": true
+    },
+    "ais": {
+      "enabled": true,
+      "type": "rtlsdr",
+      "serial": "",
+      "dedicated": false
+    },
+    "voice": {
+      "enabled": true,
+      "type": "rtlsdr",
+      "serial": "",
+      "dedicated": false,
+      "share_with": "ais",
+      "voice_lease_seconds": 900
+    }
+  },
+  "network": {
+    "bind": "lan",
+    "web_port": 8080,
+    "radio_port": 8088,
+    "ais_web_port": 8100,
+    "ais_service_port": 8118,
+    "readsb": {
+      "raw_input": 30001,
+      "raw_output": 30002,
+      "sbs_output": 30003,
+      "beast_input": 30004,
+      "beast_output": 30005,
+      "beast_secondary_input": 30104
+    }
+  },
+  "features": {
+    "adsb": true,
+    "tar1090": true,
+    "ais": true,
+    "voice_scanner": true,
+    "open_browser_after_install": true
+  },
+  "voice": {
+    "default_volume": 70,
+    "default_squelch": 5,
+    "banks": ["air", "marine", "ham", "frs"]
+  },
+  "feeds": {
+    "mastchain": {
+      "enabled": false,
+      "username": "",
+      "secret_ref": ""
+    }
+  }
+}

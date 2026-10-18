@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ship Watch — Marine Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.14.0/dist/maplibre-gl.css">
+<style>
+html,body,#map,#map3d{width:100%;height:100%;margin:0;overflow:hidden;background:#164354}
+body{font:10px Arial,sans-serif}
+#map3d[hidden]{display:none}
+.leaflet-control-attribution{font:8px Arial,sans-serif;background:#dce8ece3!important}
+.map-toolbar{position:absolute;top:6px;left:6px;z-index:1000;display:flex;align-items:center;gap:5px;padding:4px 6px;border:1px solid #79c8d899;border-radius:5px;background:#061820e8;color:#d9f4fb;box-shadow:0 2px 8px #0008}
+.map-toolbar label{font-weight:700;letter-spacing:.08em}
+.map-toolbar select{max-width:154px;padding:4px 22px 4px 6px;border:1px solid #5cb8cc;border-radius:3px;background:#0d3441;color:#ecfbff;font:700 10px Arial,sans-serif}
+.map-toolbar button{padding:4px 6px;border:1px solid #5cb8cc;border-radius:3px;background:#0d3441;color:#ecfbff;font:700 9px Arial,sans-serif;white-space:nowrap;cursor:pointer}
+.map-toolbar button[aria-pressed="true"]{background:#087f91;color:#fff}
+.map-status{position:absolute;left:6px;bottom:6px;z-index:700;max-width:calc(100% - 12px);padding:3px 5px;border-radius:3px;background:#07202acb;color:#dcf2f8;font:9px Arial,sans-serif;pointer-events:none}
+.leaflet-tooltip{font:10px Arial,sans-serif}
+.ship-marker{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:0;background:transparent;box-shadow:none;cursor:pointer}
+.ship-marker svg{width:23px;height:23px;overflow:visible}
+.ship-marker.aid,.ship-marker.shore,.ship-marker.other{border:1px solid #d8f5ff;border-radius:50%;background:#06232cdd;box-shadow:0 1px 5px #000b;color:#e4f8ff}
+.maplibre-ship-marker{background:transparent;border:0;box-shadow:none}
+.vessel-cluster-icon{background:transparent;border:0}
+.vessel-cluster-icon span{width:34px;height:34px;display:grid;place-items:center;border:2px solid #dffaff;border-radius:50%;background:#087f91;color:#fff;font:bold 12px/1 Arial,sans-serif;box-shadow:0 2px 6px #000b;text-shadow:0 1px 2px #00303b}
+</style>
+</head>
+<body>
+<div id="map" aria-label="Clean map of Saint John Harbour without vessel markers"></div>
+<div id="map3d" hidden aria-label="Three-dimensional terrain map of Saint John Harbour"></div>
+<div class="map-toolbar"><label for="mapStyle">MAP</label><select id="mapStyle" aria-label="Map style">
+  <option value="chart">MARINE CHART</option>
+  <option value="topo">TOPOGRAPHIC</option>
+  <option value="satellite">SATELLITE</option>
+  <option value="3d">3D TERRAIN</option>
+  <option value="street">STREET MAP</option>
+</select><button id="markerToggle" type="button" aria-pressed="false">VESSELS OFF</button></div>
+<div class="map-status" id="status">SAINT JOHN · VESSEL MARKERS OFF</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script type="module">
+'use strict';
+const center=[45.269,-66.064];
+const proPreview=new URLSearchParams(location.search).get('proPreview')==='1'&&(['localhost','127.0.0.1','::1'].includes(location.hostname)||location.hostname==='desktop-akh1u97.tail1781aa.ts.net');
+const map=L.map('map',{center,zoom:14,zoomControl:false,attributionControl:true,preferCanvas:true});
+const street=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'});
+const topo=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Tiles © Esri'});
+const satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
+const chart=L.tileLayer.wms('https://egisp.dfo-mpo.gc.ca/arcgis/rest/services/chs/ENC_MaritimeChartService/MapServer/exts/MaritimeChartService/WMSServer',{layers:'1,2,3,4,5,6,7,8,9,10,11,12',format:'image/png',transparent:true,version:'1.3.0',attribution:'Canadian Hydrographic Service · display only, not for navigation'});
+let terrainMap=null,terrainModule=null,voicePaused=false,showVessels=false,showTugs=true,latestTargets=[],leafletMarkers=[],terrainMarkers=[],trackLayers=[],trackById=new Map(),selectedTrackId='',selectedDestinationLayer=null,lastTrackRefresh=0;
+topo.addTo(map);chart.addTo(map);
+const status=document.getElementById('status');
+const mapStyle=document.getElementById('mapStyle');
+const markerToggle=document.getElementById('markerToggle');
+const vesselClusterLayer=typeof L.markerClusterGroup==='function'?L.markerClusterGroup({maxClusterRadius:36,showCoverageOnHover:false,spiderfyOnMaxZoom:true,spiderfyDistanceMultiplier:1.2,spiderLegPolylineOptions:{weight:1.5,color:'#dffaff',opacity:.85},iconCreateFunction(cluster){const count=cluster.getChildCount();return L.divIcon({html:`<span role="img" aria-label="${count} nearby vessels">${count}</span>`,className:'vessel-cluster-icon',iconSize:[34,34],iconAnchor:[17,17]})}}):null;
+if(!proPreview){const terrainOption=mapStyle.querySelector('option[value="3d"]');terrainOption.disabled=true;terrainOption.textContent='3D TERRAIN · PRO'}
+const movementMode=new URLSearchParams(location.search).get('movement')==='1';
+const showTracks=movementMode&&proPreview;
+if(proPreview&&(new URLSearchParams(location.search).get('markers')==='1'||movementMode)){showVessels=true;markerToggle.textContent='VESSELS ON';markerToggle.setAttribute('aria-pressed','true')}
+function setStatus(text){status.textContent=text}
+function showLeaflet(){document.getElementById('map3d').hidden=true;document.getElementById('map').hidden=false;setTimeout(()=>map.invalidateSize(),40)}
+async function showTerrain(){
+  document.getElementById('map').hidden=true;
+  document.getElementById('map3d').hidden=false;
+  setStatus(`3D TERRAIN · VESSELS ${showVessels?'ON':'OFF'}`);
+  if(!terrainModule)terrainModule=await import('https://unpkg.com/maplibre-gl@6.14.0/dist/maplibre-gl.mjs');
+  if(!terrainMap){
+    const gl=terrainModule;
+    terrainMap=new gl.Map({container:'map3d',center:[center[1],center[0]],zoom:13,pitch:58,bearing:-12,maxPitch:78,style:{version:8,sources:{imagery:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'Imagery © Esri'},terrainSource:{type:'raster-dem',url:'https://tiles.mapterhorn.com/tilejson.json'},hillshadeSource:{type:'raster-dem',url:'https://tiles.mapterhorn.com/tilejson.json'}},layers:[{id:'imagery',type:'raster',source:'imagery'},{id:'hillshade',type:'hillshade',source:'hillshadeSource',paint:{'hillshade-shadow-color':'#25323a','hillshade-highlight-color':'#d8e2dd','hillshade-exaggeration':0.3}}],terrain:{source:'terrainSource',exaggeration:1},sky:{}},maxZoom:18});
+    terrainMap.addControl(new gl.NavigationControl({visualizePitch:true,showZoom:true,showCompass:true}),'bottomright');
+    terrainMap.on('load',()=>updateMarkerControl());
+  }else terrainMap.resize();
+}
+function setStyle(value){
+  if(value==='3d'&&!proPreview){mapStyle.value='chart';setStatus('3D TERRAIN IS A PRO MAP VIEW');return}
+  if(value==='3d'){setStatus(`LOADING 3D TERRAIN · VESSELS ${showVessels?'ON':'OFF'}`);showTerrain().then(()=>{renderVesselMarkers();updateMarkerControl()}).catch(()=>setStatus(terrainMap?'3D TERRAIN · VESSEL MARKERS OFF':'3D VIEW COULD NOT START'));return}
+  showLeaflet();
+  [street,topo,satellite].forEach(layer=>{if(map.hasLayer(layer))map.removeLayer(layer)});
+  if(map.hasLayer(chart))map.removeLayer(chart);
+  if(value==='chart'){topo.addTo(map);chart.addTo(map);setStatus('SAINT JOHN · CHS MARINE CHART · NO VESSEL MARKERS · DISPLAY ONLY')}
+  else if(value==='topo'){topo.addTo(map);setStatus('TOPOGRAPHIC · VESSEL MARKERS OFF')}
+  else if(value==='satellite'){satellite.addTo(map);setStatus('SATELLITE · VESSEL MARKERS OFF')}
+  else{street.addTo(map);setStatus('STREET MAP · VESSEL MARKERS OFF')}
+  renderVesselMarkers();updateMarkerControl();
+}
+mapStyle.addEventListener('change',()=>setStyle(mapStyle.value));
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function vesselCategory(vessel){const text=`${vessel.type||''} ${vessel.name||''}`.toLowerCase(),code=Number(vessel.type);if(vessel.mmsi==='3160092')return'shore';if(/range|beacon|buoy|aton/.test(text))return'aid';if(/pilot/.test(text)||code===50)return'pilot';if(/tug|tow/.test(text)||code===52)return'tug';if(/passenger|ferry|cruise/.test(text)||(code>=60&&code<=69))return'passenger';if(/cargo|container|tanker|freight/.test(text)||(code>=70&&code<=79)||(code>=80&&code<=89))return'cargo';return'other'}
+function shipIconMarkup(category,vessel){
+  const shapes={
+    tug:'<path d="M3 17h18l-2.5 4h-12zM5 16l2-6h5l2 3 2-5 3 8z"/><path d="M8 8h4v2H8zM4 22q2-2 4 0t4 0t4 0t4 0" fill="none" stroke="currentColor" stroke-width="1.6"/>',
+    passenger:'<path d="M2 17h20l-3 4H6zM5 16V9h3V6h9v3h3v7z"/><path d="M10 8v3m4-3v3m4 1v3m-10-3v3" stroke="#08232c" stroke-width="1.2"/>',
+    cargo:'<path d="M2 17h20l-3 4H5zM5 15V9h4v6zm5 0V7h4v8zm5 0v-5h4v5z"/><path d="M7 10h1m3-1h1m3 3h1" stroke="#08232c" stroke-width="1.2"/>',
+    pilot:'<path d="M2 17h20l-3 4H6zM5 16l2-7h8l3 7z"/><path d="M9 7h5v2H9zM4 22q2-2 4 0t4 0t4 0t4 0" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+    aid:'<path d="M12 2 21 11l-9 11-9-11z"/><path d="M8 11h8m-4-4v8" fill="none" stroke="#08232c" stroke-width="1.6"/>',
+    shore:'<path d="M11 20h2V8h-2zM8 20h8v2H8zM9 11l3-6 3 6z"/><path d="M7 8Q4 11 7 14m10-6q3 3 0 6M5 5Q0 11 5 17m14-12q5 6 0 12" fill="none" stroke="currentColor" stroke-width="1.4"/>',
+    other:'<path d="M2 17h20l-3 4H6zM5 16l3-7h7l4 7z"/><path d="M10 7h4v2h-4z"/>'
+  };
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${shapes[category]||shapes.other}</svg>`;
+}
+function vesselTypeLabel(vessel){const category=vesselCategory(vessel),labels={tug:'Tug',passenger:'Passenger vessel',cargo:'Cargo vessel',pilot:'Pilot vessel',aid:'Navigation aid',shore:'Shore AIS station',other:'Vessel'};return `${labels[category]}${/^\d+$/.test(String(vessel.type||''))?` · AIS type ${vessel.type}`:''}`}
+function vesselPopup(vessel){
+  const rows=[['MMSI',vessel.mmsi],['Type',vesselTypeLabel(vessel)],['Flag',vessel.flag],['Call sign',vessel.callsign],['Destination',vessel.destination]].filter(([,value])=>value!==''&&value!=null);
+  const heading=vesselCategory(vessel)==='shore'?'LAND AIS STATION':vessel.name||'Unknown vessel';
+  return `<div class="vessel-popup"><strong>${escapeHtml(heading)}</strong>${rows.map(([label,value])=>`<br><span>${label}:</span> ${escapeHtml(value)}`).join('')}${vesselCategory(vessel)==='shore'?'<br><span>Record:</span> No vessel name; short MMSI and unspecified type':''}</div>`;
+}
+function renderVesselMarkers(){
+  if(vesselClusterLayer){vesselClusterLayer.clearLayers();if(map.hasLayer(vesselClusterLayer))map.removeLayer(vesselClusterLayer)}else leafletMarkers.forEach(marker=>map.removeLayer(marker));leafletMarkers=[];
+  terrainMarkers.forEach(marker=>marker.remove());terrainMarkers=[];
+  if(!showVessels)return;
+  for(const vessel of latestTargets){
+    const category=vesselCategory(vessel);if(movementMode&&!showTugs&&category==='tug')continue;const markerLabel=category==='shore'?`Land AIS station · ${vessel.mmsi}`:vessel.name||'Vessel',icon=L.divIcon({className:'',html:`<div class="ship-marker ${category}" title="${escapeHtml(markerLabel)}" role="button" aria-label="${escapeHtml(markerLabel)}">${shipIconMarkup(category,vessel)}</div>`,iconSize:[40,40],iconAnchor:[20,20]});
+    if(mapStyle.value==='3d'&&terrainMap){const element=document.createElement('div');element.className=`ship-marker maplibre-ship-marker ${category}`;element.title=markerLabel;element.setAttribute('aria-label',markerLabel);element.innerHTML=shipIconMarkup(category,vessel);const marker=new terrainModule.Marker({element,anchor:'center'}).setLngLat([vessel.lng,vessel.lat]).setPopup(new terrainModule.Popup({offset:18}).setHTML(vesselPopup(vessel))).addTo(terrainMap);terrainMarkers.push(marker)}
+    else{const marker=L.marker([vessel.lat,vessel.lng],{icon,title:vessel.name||'Vessel',alt:`${category} vessel marker`}).bindPopup(vesselPopup(vessel));marker._shipwatchMmsi=String(vessel.mmsi);if(movementMode)marker.on('click',()=>parent.postMessage({type:'shipwatch-select-vessel',mmsi:String(vessel.mmsi)},location.origin));if(vesselClusterLayer)vesselClusterLayer.addLayer(marker);else marker.addTo(map);leafletMarkers.push(marker)}
+  }
+  if(vesselClusterLayer&&mapStyle.value!=='3d')vesselClusterLayer.addTo(map);
+}
+async function refreshMovementTracks(){
+  if(!showTracks||!latestTargets.length||Date.now()-lastTrackRefresh<60000)return;
+  const ids=latestTargets.filter(v=>!['shore','aid'].includes(vesselCategory(v))&&/^\d{9}$/.test(String(v.mmsi||''))).map(v=>String(v.mmsi));
+  if(!ids.length)return;
+  lastTrackRefresh=Date.now();
+  try{
+    const response=await fetch(`history-api.php?kind=marine&view=tracks&hours=168&ids=${encodeURIComponent(ids.join(','))}&_=${Date.now()}`,{cache:'no-store'});
+    if(!response.ok)return;
+    const data=await response.json();if(!data.ok)return;
+    trackLayers.forEach(layer=>map.removeLayer(layer));trackLayers=[];trackById.clear();
+    for(const track of data.rows||[]){const points=(track.points||[]).map(p=>[p.lat,p.lon]);if(points.length<2)continue;
+      const selected=String(track.id)===selectedTrackId;
+      const line=L.polyline(points,{color:'#58e5ff',weight:4,opacity:.95,interactive:true,className:'shipwatch-vessel-track'});
+      if(selected)line.addTo(map);line._shipwatchMmsi=String(track.id);line.on('click',()=>focusMovementTarget(track.id));trackLayers.push(line);trackById.set(String(track.id),line);
+    }
+    if(selectedTrackId)focusMovementTarget(selectedTrackId);
+  }catch(error){/* Track history is optional; keep live positions available if it is offline. */}
+}
+function focusMovementTarget(mmsi){
+  selectedTrackId=String(mmsi);const vessel=latestTargets.find(v=>String(v.mmsi)===selectedTrackId),line=trackById.get(selectedTrackId);
+  trackLayers.forEach(layer=>{if(layer._shipwatchMmsi===selectedTrackId){layer.setStyle({color:'#58e5ff',weight:4,opacity:.95});if(!map.hasLayer(layer))layer.addTo(map)}else if(map.hasLayer(layer))map.removeLayer(layer)});
+  if(line&&line.getLatLngs().length>1)map.fitBounds(line.getBounds(),{padding:[32,32],maxZoom:15});
+  else if(vessel)map.setView([vessel.lat,vessel.lng],15);
+  if(selectedDestinationLayer){map.removeLayer(selectedDestinationLayer);selectedDestinationLayer=null}
+  if(vessel&&/\bdigby\b/i.test(String(vessel.destination||''))){const digby=[44.6215,-65.7614],last=line?.getLatLngs().slice(-1)[0]||[vessel.lat,vessel.lng];selectedDestinationLayer=L.polyline([last,digby],{color:'#ffd36b',weight:3,opacity:.85,dashArray:'7 7',interactive:false}).addTo(map);selectedDestinationLayer.bindTooltip('Approximate route toward Digby · not received AIS track',{sticky:true});map.fitBounds(L.latLngBounds(line?.getLatLngs().length>1?[...line.getLatLngs(),L.latLng(digby)]:[last,L.latLng(digby)]),{padding:[32,32],maxZoom:9})}
+  const marker=leafletMarkers.find(m=>m._shipwatchMmsi===selectedTrackId);if(marker)marker.openPopup();
+}
+function updateMarkerControl(){markerToggle.textContent=showVessels?'VESSELS ON':'VESSELS OFF';markerToggle.setAttribute('aria-pressed',String(showVessels));if(showVessels&&!latestTargets.length){setStatus('VESSELS ON · WAITING FOR AIS DATA');return}const layer=mapStyle.value==='chart'?'MARINE CHART':mapStyle.value==='topo'?'TOPOGRAPHIC':mapStyle.value==='satellite'?'SATELLITE':mapStyle.value==='3d'?'3D TERRAIN':'STREET MAP';setStatus(`${layer} · ${showVessels?latestTargets.length+' VESSELS':'VESSELS OFF'}${mapStyle.value==='chart'?' · DISPLAY ONLY':''}`)}
+markerToggle.addEventListener('click',()=>{showVessels=!showVessels;renderVesselMarkers();updateMarkerControl()});
+window.addEventListener('message',event=>{
+  if(event.origin!==location.origin||event.source!==parent)return;
+  if(event.data?.type==='shipwatch-mode'){voicePaused=!!event.data.voice;if(voicePaused)setStatus('MAP PAUSED · VOICE RECEIVER IN USE')}
+  if(event.data?.type==='shipwatch-resize'){map.invalidateSize();terrainMap?.resize()}
+  if(event.data?.type==='shipwatch-tug-visibility'&&movementMode){showTugs=event.data.visible!==false;const selected=latestTargets.find(v=>String(v.mmsi)===selectedTrackId);if(!showTugs&&selected&&vesselCategory(selected)==='tug'){selectedTrackId='';trackLayers.forEach(layer=>map.removeLayer(layer))}renderVesselMarkers()}
+  if(event.data?.type==='shipwatch-focus'&&movementMode)focusMovementTarget(event.data.mmsi);
+  if(event.data?.type==='shipwatch-clear-focus'&&movementMode){selectedTrackId='';trackLayers.forEach(layer=>map.removeLayer(layer));if(selectedDestinationLayer){map.removeLayer(selectedDestinationLayer);selectedDestinationLayer=null}map.setView(center,14)}
+});
+new ResizeObserver(()=>{map.invalidateSize();terrainMap?.resize()}).observe(document.getElementById('map'));
+
+// Keep the AIS data handoff for Lookup and render class-specific markers only when enabled.
+async function refreshTargets(){if(voicePaused)return;try{const response=await fetch('ais-proxy.php?_='+Date.now(),{cache:'no-store'});if(!response.ok)throw Error('AIS unavailable');const data=await response.json();if(!Array.isArray(data.dynamic))throw Error('AIS unavailable');const staticRows=new Map((data.static||[]).map(row=>[String(row[0]),row]));const targets=[];for(const row of data.dynamic){const mmsi=String(row[0]||'');if(row[1]==null||row[2]==null)continue;const lat=Number(row[1]),lng=Number(row[2]);if(!Number.isFinite(lat)||!Number.isFinite(lng))continue;const vessel=staticRows.get(mmsi)||[];targets.push({mmsi,name:String(vessel[1]||'').trim()||mmsi,lat,lng,course:validBearing(row[5]),heading:validBearing(row[6]),callsign:vessel[2]||'',destination:vessel[3]||'',type:vessel[4]||'',imo:vessel[5]||'',length:vessel[6]||'',beam:vessel[7]||'',flag:String(row[21]||'').trim().toUpperCase(),reportTime:row[13]||''})}latestTargets=targets;renderVesselMarkers();updateMarkerControl();refreshMovementTracks();parent.postMessage({type:'shipwatch-targets',targets},location.origin)}catch(error){/* Keep the map usable when the separate receiver feed is offline. */}}
+refreshTargets();setInterval(refreshTargets,5000);if(showTracks)setInterval(refreshMovementTracks,60000);
+</script>
+</body>
+</html>

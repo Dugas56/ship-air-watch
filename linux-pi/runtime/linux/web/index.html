@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ship Watch</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --panel: #111820;
+      --line: #2d3a46;
+      --text: #f4f7fb;
+      --muted: #aab7c4;
+      --accent: #55c7a7;
+      --split: 50%;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 14px;
+      background: #0f151c;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    button, a.button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #17212b;
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button:hover, a.button:hover { border-color: var(--accent); }
+    button.active { background: #17362f; border-color: var(--accent); }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(280px, var(--split)) 8px minmax(280px, 1fr);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .pane {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-width: 0;
+      min-height: 0;
+      background: var(--panel);
+    }
+
+    .pane-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 38px;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pane-title strong {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #050709;
+    }
+
+    .divider {
+      background: linear-gradient(90deg, #111820, #344555, #111820);
+      cursor: col-resize;
+      touch-action: none;
+    }
+
+    .divider:hover { background: var(--accent); }
+    body.dragging iframe { pointer-events: none; }
+
+    body.air-only main,
+    body.marine-only main { grid-template-columns: 1fr; }
+    body.air-only .marine,
+    body.air-only .divider,
+    body.marine-only .air,
+    body.marine-only .divider { display: none; }
+
+    @media (max-width: 620px) {
+      header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      h1 { white-space: normal; }
+
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .actions a.button { grid-column: span 1; }
+
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) 8px minmax(0, 1fr);
+        overflow: hidden;
+      }
+
+      .divider { cursor: row-resize; }
+      body.air-only main,
+      body.marine-only main { grid-template-rows: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ship Watch</h1>
+    <nav class="actions" aria-label="View controls">
+      <button type="button" data-mode="split" class="active">Both</button>
+      <button type="button" data-mode="marine">Marine</button>
+      <button type="button" data-mode="air">Air</button>
+      <a class="button" id="marineLink" href="#" target="_blank" rel="noreferrer">Open Marine</a>
+      <a class="button" href="/tar1090/" target="_blank" rel="noreferrer">Open Air</a>
+    </nav>
+  </header>
+
+  <main id="layout">
+    <section class="pane marine" aria-label="Marine AIS">
+      <div class="pane-title"><strong>Marine AIS</strong><span>Port {{AIS_WEB_PORT}}</span></div>
+      <iframe id="marineMap" title="Marine AIS map"></iframe>
+    </section>
+
+    <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize panes"></div>
+
+    <section class="pane air" aria-label="Aircraft ADS-B">
+      <div class="pane-title"><strong>Aircraft</strong><span>tar1090</span></div>
+      <iframe title="Aircraft ADS-B map" src="/tar1090/"></iframe>
+    </section>
+  </main>
+
+  <script>
+    const body = document.body;
+    const divider = document.getElementById('divider');
+    const buttons = [...document.querySelectorAll('[data-mode]')];
+    const marineUrl = `${location.protocol}//${location.hostname}:{{AIS_WEB_PORT}}/`;
+    document.getElementById('marineLink').href = marineUrl;
+    document.getElementById('marineMap').src = marineUrl;
+
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const mode = button.dataset.mode;
+        body.classList.toggle('marine-only', mode === 'marine');
+        body.classList.toggle('air-only', mode === 'air');
+        buttons.forEach(item => item.classList.toggle('active', item === button));
+      });
+    });
+
+    divider.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      body.classList.add('dragging');
+      divider.setPointerCapture(event.pointerId);
+    });
+
+    divider.addEventListener('pointermove', event => {
+      if (!body.classList.contains('dragging')) return;
+      const rect = document.getElementById('layout').getBoundingClientRect();
+      const wide = window.matchMedia('(min-width: 621px)').matches;
+      if (!wide) return;
+      const percent = ((event.clientX - rect.left) / rect.width) * 100;
+      document.documentElement.style.setProperty('--split', `${Math.min(75, Math.max(25, percent))}%`);
+    });
+
+    function stopDrag() { body.classList.remove('dragging'); }
+    divider.addEventListener('pointerup', stopDrag);
+    divider.addEventListener('pointercancel', stopDrag);
+  </script>
+</body>
+</html>

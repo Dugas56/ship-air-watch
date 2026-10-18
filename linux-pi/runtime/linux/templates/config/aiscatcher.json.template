@@ -1,0 +1,44 @@
+{
+  "config": "aiscatcher",
+  "version": 1,
+  "engine": "on",
+  "sharing": true,
+  "receiver": [
+    {
+      "input": "RTLSDR",
+      "active": true,
+      "channel": "AB",
+      "rtlsdr": {
+        "tuner": "auto",
+        "bandwidth": 192000,
+        "sample_rate": 1536000,
+        "freqoffset": 0,
+        "biastee": false,
+        "rtlagc": true
+      },
+      "verbose": true,
+      "serial": "{{AIS_SERIAL}}"
+    }
+  ],
+  "server": [
+    {
+      "active": true,
+      "port": {{AIS_WEB_PORT}},
+      "station": "{{STATION_NAME}}",
+      "plugin_dir": "/etc/AIS-catcher/plugins",
+      "file": "/etc/AIS-catcher/stat.bin",
+      "backup": 10,
+      "context": "settings",
+      "realtime": true,
+      "geojson": true,
+      "prome": false,
+      "share_loc": false
+    }
+  ],
+  "udp": [],
+  "tcp": [],
+  "http": [],
+  "mqtt": [],
+  "tcp_listener": [],
+  "sharing_zone": []
+}

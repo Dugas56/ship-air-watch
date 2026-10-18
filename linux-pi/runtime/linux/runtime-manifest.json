@@ -1,0 +1,68 @@
+{
+  "schema_version": 2,
+  "reference": "Shipwatch Slim Linux Runtime - 2026-10-07",
+  "apt_packages": [
+    "rtl-sdr",
+    "ffmpeg",
+    "lighttpd",
+    "python3",
+    "python3-nacl",
+    "curl",
+    "usbutils",
+    "lsof",
+    "librtlsdr0",
+    "libusb-1.0-0",
+    "libncurses6",
+    "libtinfo6",
+    "zlib1g",
+    "libzstd1"
+  ],
+  "optional_packages": {
+    "ssh_remote_management": ["openssh-server"]
+  },
+  "temporary_installer_packages": [
+    "git"
+  ],
+  "managed_components": {
+    "ais_catcher": {
+      "required": true,
+      "binary": "/usr/bin/AIS-catcher",
+      "service": "ais-catcher.service",
+      "config": "/etc/AIS-catcher/aiscatcher.json"
+    },
+    "readsb": {
+      "required": true,
+      "binary": "/usr/bin/readsb",
+      "service": "readsb.service",
+      "config": "/etc/default/readsb"
+    },
+    "tar1090": {
+      "required": true,
+      "service": "tar1090.service",
+      "runtime": "/usr/local/share/tar1090",
+      "config": "/etc/default/tar1090"
+    },
+    "shipwatch_air": {
+      "required": true,
+      "binary": "/usr/local/bin/shipwatch-air.py",
+      "service": "shipwatch-air.service",
+      "config": "/etc/shipwatch/shipwatch.json"
+    }
+  },
+  "explicitly_not_required": [
+    "gnuradio",
+    "gnuradio-dev",
+    "gr-osmosdr",
+    "gr-fosphor",
+    "cmake",
+    "build-essential",
+    "doxygen",
+    "clang-format",
+    "gnuplot-x11",
+    "libuhd-dev",
+    "libhackrf-dev",
+    "op25",
+    "php",
+    "php-fpm"
+  ]
+}

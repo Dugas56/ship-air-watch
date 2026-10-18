@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+html,body,#map{height:100%;margin:0;background:#d6e7ec}
+.leaflet-control-attribution{font-size:9px}
+.ship-icon{font:700 18px Arial;color:#ffb04a;text-shadow:0 1px 4px #071a22}
+.receiver-icon{font:700 16px Arial;color:#27d6ff;text-shadow:0 1px 4px #071a22}
+.receiver-visible-icon{color:#2dcc69;text-shadow:0 0 5px #eaffef,0 0 10px #18b64d}
+.map-legend{background:#061921dd;color:#dff7ee;padding:5px 8px;border:1px solid #467061;border-radius:4px;font:10px Arial;line-height:1.6}
+.legend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:#2dcc69}.legend-line{display:inline-block;width:13px;border-top:2px dashed #f29a32;margin-right:5px;vertical-align:middle}.legend-line.green{border-color:#2dcc69}
+</style>
+</head>
+<body>
+<div id="map" aria-label="ISS ground track with Saint John visibility highlighted"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map=L.map('map',{center:[0,0],zoom:0,minZoom:0,zoomControl:false,worldCopyJump:true});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:6,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+const iss=L.marker([0,0],{icon:L.divIcon({className:'ship-icon',html:'✦',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(map).bindTooltip('International Space Station');
+const station=L.marker([45.2733,-66.0633],{icon:L.divIcon({className:'receiver-icon',html:'⌖',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(map).bindTooltip('Ship Watch receiver · Saint John');
+const track=L.polyline([],{color:'#f29a32',weight:2,opacity:.9,dashArray:'5 5'}).addTo(map);
+const visibleTrack=L.polyline([],{color:'#2dcc69',weight:4,opacity:1}).addTo(map);
+const legend=L.control({position:'bottomleft'});legend.onAdd=()=>{const el=L.DomUtil.create('div','map-legend');el.innerHTML='<span class="legend-line green"></span>Visible from Saint John · 10°+<br><span class="legend-line"></span>Other parts of ISS track';return el};legend.addTo(map);
+window.addEventListener('message',e=>{
+  if(e.origin!==location.origin||e.data?.type!=='iss-position')return;
+  const {latitude,longitude,elevation}=e.data;iss.setLatLng([latitude,longitude]);
+  const isVisible=elevation>=10;
+  station.setIcon(L.divIcon({className:'receiver-icon'+(isVisible?' receiver-visible-icon':''),html:'⌖',iconSize:[22,22],iconAnchor:[11,11]}));
+  station.setTooltipContent('Ship Watch receiver · Saint John · '+(isVisible?'ISS above 10°':'ISS below 10°'));
+  const lines=[];let line=[],last=null;
+  const greenLines=[];let greenLine=[],greenLast=null;
+  for(const p of e.data.track){
+    if(last&&Math.abs(p.longitude-last.longitude)>180){line.push([p.latitude,last.longitude>0?180:-180]);lines.push(line);line=[[p.latitude,last.longitude>0?-180:180]]}
+    line.push([p.latitude,p.longitude]);last=p;
+    if(p.elevation>=10){
+      if(greenLast&&Math.abs(p.longitude-greenLast.longitude)>180){if(greenLine.length>1)greenLines.push(greenLine);greenLine=[]}
+      greenLine.push([p.latitude,p.longitude]);greenLast=p;
+    }else{if(greenLine.length>1)greenLines.push(greenLine);greenLine=[];greenLast=null}
+  }
+  if(line.length)lines.push(line);if(greenLine.length>1)greenLines.push(greenLine);track.setLatLngs(lines);visibleTrack.setLatLngs(greenLines);
+});
+</script>
+</body>
+</html>

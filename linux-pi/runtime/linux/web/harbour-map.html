@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saint John Harbour — Live AIS</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+html,body,#map{width:100%;height:100%;margin:0;background:#09121a;overflow:hidden}
+.leaflet-control-attribution{font:9px/1.2 Segoe UI,Arial,sans-serif;background:rgba(0,0,0,.45)!important;color:#ddd!important}
+.leaflet-control-attribution a{color:#fff!important}
+.ship-wrap{background:transparent;border:0}
+.ship-marker{
+  width:18px;height:28px;position:relative;transform-origin:50% 50%;
+  filter:drop-shadow(0 1px 2px #000) drop-shadow(0 0 3px #001826);
+}
+.ship-marker svg{display:block;width:18px;height:28px}
+.ship-label{
+  position:absolute;left:50%;top:26px;transform:translateX(-50%);
+  white-space:nowrap;padding:1px 4px;border-radius:3px;
+  color:#fff;background:rgba(3,12,18,.72);
+  font:600 10px/1.25 Segoe UI,Arial,sans-serif;
+  text-shadow:0 1px 2px #000;pointer-events:none;
+}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0c171f;color:#eff8ff}
+.leaflet-popup-content{margin:10px 12px;font:12px/1.45 Segoe UI,Arial,sans-serif}
+</style>
+</head>
+<body>
+<div id="feedStatus" style="position:absolute;top:10px;left:10px;z-index:1000;background:#071019dd;color:#ffcf5a;padding:8px;border-radius:6px;font:12px Segoe UI">Waiting for AIS data…</div>
+<div id="map" aria-label="Live marine map of Saint John Harbour"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map=L.map('map',{
+  center:[45.255,-66.055],
+  zoom:12,
+  zoomControl:false,
+  attributionControl:true,
+  preferCanvas:true
+});
+
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:19,attribution:'Tiles © Esri'}
+).addTo(map);
+
+const markers=new Map();
+let voicePaused=false,lastUpdate=null;
+window.addEventListener('message',e=>{
+ if(e.origin!==location.origin||e.source!==parent) return;
+ if(e.data?.type==='shipwatch-resize') setTimeout(()=>map.invalidateSize(),50);
+ if(e.data?.type==='shipwatch-mode'){voicePaused=!!e.data.voice;paintFeedStatus();}
+});
+new ResizeObserver(()=>map.invalidateSize()).observe(document.getElementById('map'));
+function paintFeedStatus(error=false){
+ const time=lastUpdate?' · Last fetched '+lastUpdate.toLocaleTimeString():'';
+ document.getElementById('feedStatus').textContent=voicePaused?'AIS paused while voice is ON'+time:error?'AIS feed unavailable · Showing last positions'+time:lastUpdate?'AIS · '+markers.size+' targets'+time:'Waiting for AIS data…';
+}
+
+function esc(v){
+  return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function shipIcon(name,course){
+  const angle=Number.isFinite(course)?course:0;
+  const label=name?'<span class="ship-label">'+esc(name)+'</span>':'';
+  return L.divIcon({
+    className:'ship-wrap',
+    iconSize:[18,28],
+    iconAnchor:[9,14],
+    html:'<div class="ship-marker" style="transform:rotate('+angle+'deg)">'+
+      '<svg viewBox="0 0 18 28" aria-hidden="true">'+
+      '<path d="M9 1 L16 20 L9 27 L2 20 Z" fill="#67e8f9" stroke="#06141b" stroke-width="1.5"/>'+
+      '<path d="M9 4 L9 23" stroke="#dffbff" stroke-width="1.2" opacity=".8"/>'+
+      '</svg>'+label+'</div>'
+  });
+}
+
+function aidIcon(name){
+  return L.divIcon({className:'ship-wrap',iconSize:[24,30],iconAnchor:[12,15],
+    html:'<div style="position:relative"><svg width="24" height="30" viewBox="0 0 24 30"><path d="M12 2 L22 15 L12 28 L2 15 Z" fill="#ffcf5a" stroke="#17202a" stroke-width="2"/><circle cx="12" cy="15" r="4" fill="#17202a"/></svg><span class="ship-label">'+esc(name)+'</span></div>'});
+}
+function buildStaticIndex(rows){
+  const out=new Map();
+  (rows||[]).forEach(r=>out.set(String(r[0]),r));
+  return out;
+}
+
+const PI='http://{{SHIPWATCH_HOST}}:{{RADIO_PORT}}';
+
+async function refreshShips(){
+  if(voicePaused) return;
+  try{
+    const res=await fetch(PI+'/api/ais-ships?_='+Date.now(),{cache:'no-store'});
+    if(!res.ok) throw new Error('AIS '+res.status);
+    const data=await res.json();
+    if(!Array.isArray(data.dynamic)) throw new Error('Invalid AIS target data');
+    const stat=buildStaticIndex(data.static);
+    const live=new Set();
+
+    (data.dynamic||[]).forEach(d=>{
+      const mmsi=String(d[0]??'');
+      if(d[1]==null || d[2]==null) return;
+      const lat=Number(d[1]), lon=Number(d[2]);
+      if(!Number.isFinite(lat)||!Number.isFinite(lon)) return;
+      const aid=mmsi.startsWith('99');
+
+      const s=stat.get(mmsi)||[];
+      const name=(s[1]||'').trim() || mmsi;
+      const heading=Number(d[5]);
+      const course=Number(d[6]);
+      const speed=Number(d[7]);
+      const rotation=Number.isFinite(course)?course:(Number.isFinite(heading)?heading:0);
+      live.add(mmsi);
+
+      let marker=markers.get(mmsi);
+      if(!marker){
+        marker=L.marker([lat,lon],{icon:(aid?aidIcon(name):shipIcon(name,rotation)),keyboard:false}).addTo(map);
+        markers.set(mmsi,marker);
+      }else{
+        marker.setLatLng([lat,lon]);
+        marker.setIcon((aid?aidIcon(name):shipIcon(name,rotation)));
+      }
+
+      const speedText=Number.isFinite(speed)?speed.toFixed(1)+' kn':'—';
+      const courseText=Number.isFinite(course)?Math.round(course)+'°':'—';
+      marker.bindPopup(
+        '<b>'+esc(name)+'</b><br>'+
+        'MMSI '+esc(mmsi)+'<br>'+
+        (aid?'AIS navigation aid (physical or virtual)':('Speed '+speedText+' · Course '+courseText))
+      );
+    });
+
+    for(const [mmsi,marker] of markers){
+      if(!live.has(mmsi)){
+        map.removeLayer(marker);
+        markers.delete(mmsi);
+      }
+    }
+    lastUpdate=new Date();paintFeedStatus();
+  }catch(err){
+    paintFeedStatus(true);
+    console.warn('AIS refresh failed',err);
+  }
+}
+
+refreshShips();
+setInterval(refreshShips,2000);
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "version": "2026.10.08.1",
+  "clips": [
+    {
+      "id": "welcome",
+      "label": "Seagull welcome — original video",
+      "src": "assets/radio-v2/usb-welcome.mp4"
+    }
+  ]
+}

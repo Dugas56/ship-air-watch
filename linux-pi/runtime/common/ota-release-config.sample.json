@@ -1,0 +1,4 @@
+{
+  "api_url": "https://atlanticlink.ca/shipwatch-ota/api/v1/",
+  "server_verify_key_b64": "REPLACE_WITH_BASE64_ED25519_PUBLIC_KEY"
+}

@@ -1,0 +1,8 @@
+.env
+*.secret
+*.key
+*.pem
+*.db
+*.sqlite
+__pycache__/
+*.pyc

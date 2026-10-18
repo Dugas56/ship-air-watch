@@ -1,0 +1,7 @@
+# Shipwatch readsb configuration template
+# Filled by installer.
+
+RECEIVER_OPTIONS="--device {{ADSB_SERIAL}} --device-type rtlsdr --gain {{ADSB_GAIN}} --ppm {{ADSB_PPM}}"
+DECODER_OPTIONS="--lat {{LATITUDE}} --lon {{LONGITUDE}} --max-range {{MAX_RANGE}} --write-json-every 1"
+NET_OPTIONS="--net --net-ri-port {{READSB_RAW_INPUT}} --net-ro-port {{READSB_RAW_OUTPUT}} --net-sbs-port {{READSB_SBS_OUTPUT}} --net-bi-port {{READSB_BEAST_INPUT}},{{READSB_BEAST_SECONDARY_INPUT}} --net-bo-port {{READSB_BEAST_OUTPUT}}"
+JSON_OPTIONS="--json-location-accuracy 2 --range-outline-hours 24 --db-file=/usr/share/readsb/aircraft.csv.gz --db-file-lt"

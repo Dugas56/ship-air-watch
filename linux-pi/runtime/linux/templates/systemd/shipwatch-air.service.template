@@ -1,0 +1,15 @@
+[Unit]
+Description=Shipwatch Radio / Scanner Service
+After=network.target
+Conflicts=air-live.service
+
+[Service]
+Type=simple
+ExecStartPre=/bin/systemctl start ais-catcher.service
+ExecStart=/usr/bin/python3 /usr/local/bin/shipwatch-air.py
+ExecStopPost=/bin/systemctl start ais-catcher.service
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
