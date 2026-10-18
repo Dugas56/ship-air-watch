@@ -44,5 +44,15 @@ class RegionalTests(unittest.TestCase):
     def test_override_map_center(self):
         result = region.map_view_suggestion(45, -66, {"latitude": 44.65, "longitude": -63.57})
         self.assertEqual(result["center"]["longitude"], -63.57)
+    def test_station_region(self):
+        chosen = {"port": {"name": "Sample Port", "latitude": 45.25, "longitude": -66.06}}
+        result = region.build_station_region(45.27, -66.05, chosen)
+        self.assertEqual(result["selected_facilities"]["port"]["name"], "Sample Port")
+        self.assertEqual(result["map"]["center"]["latitude"], 45.27)
+        self.assertNotIn("airport", result["selected_facilities"])
+
+    def test_station_region_rejects_bad_facility(self):
+        with self.assertRaises(ValueError):
+            region.build_station_region(45.27, -66.05, {"port": {"name": "", "latitude": 45, "longitude": -66}})
 if __name__ == "__main__":
     unittest.main()

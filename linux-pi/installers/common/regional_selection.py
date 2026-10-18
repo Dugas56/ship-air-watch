@@ -69,6 +69,30 @@ def regional_preview(latitude: float, longitude: float, catalog: list[dict]) -> 
         "standard_receive_mhz": dict(STANDARD_RECEIVE_MHZ),
         "applies_changes": False,
     }
+
+def build_station_region(latitude: float, longitude: float, selections: dict) -> dict:
+    """Create a data-only station region suitable for a config preview."""
+    lat, lon = validate_coordinate(latitude, longitude)
+    if not isinstance(selections, dict):
+        raise ValueError("Selections must be a dictionary")
+    result = {"map": map_view_suggestion(lat, lon), "selected_facilities": {}}
+    for category in ("port", "airport"):
+        facility = selections.get(category)
+        if facility is None:
+            continue
+        if not isinstance(facility, dict):
+            raise ValueError("Facility must be an object")
+        fac_lat, fac_lon = validate_coordinate(facility["latitude"], facility["longitude"])
+        name = facility["name"]
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Facility needs a name")
+        result["selected_facilities"][category] = {
+            "name": name,
+            "latitude": fac_lat,
+            "longitude": fac_lon,
+        }
+    return result
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Local-only suggestions. Coordinates must be supplied explicitly.")
     parser.add_argument("--latitude", type=float, required=True)

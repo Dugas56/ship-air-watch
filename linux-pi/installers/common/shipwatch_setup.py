@@ -397,7 +397,7 @@ def main() -> int:
     cfg["station"]["longitude"] = ask("Longitude", "")
     # Explicit opt-in: no geolocation service is contacted.
     if yes_no("Suggest nearby ports and airports from a local catalog?", False):
-        from regional_selection import suggest, validate_coordinate
+        from regional_selection import suggest, validate_coordinate, build_station_region
         try:
             lat, lon = validate_coordinate(cfg["station"]["latitude"], cfg["station"]["longitude"])
             default_catalog = str(Path(__file__).resolve().parent / "regional_facilities.json")
@@ -425,10 +425,12 @@ def main() -> int:
                         }
                 else:
                     print("  No entries in range; check catalog coverage.")
+            cfg["station"]["region_preview"] = build_station_region(lat, lon, cfg["station"]["regional_suggestions"])
             print("Regional suggestions saved in preview only; SDR tuning unchanged.")
         except (ValueError, KeyError, OSError, TypeError) as exc:
             print("WARN: No regional suggestion applied: " + str(exc))
             cfg["station"].pop("regional_suggestions", None)
+            cfg["station"].pop("region_preview", None)
     collect_ota_consent(target, cfg["station"], cfg["installation"])
 
     if target == "remote":
