@@ -93,6 +93,54 @@ def build_station_region(latitude: float, longitude: float, selections: dict) ->
         }
     return result
 
+
+def build_spatial_index(catalog: list[dict], cell_degrees: int = 2) -> dict:
+    """Pre-bucket facilities for repeated queries (in-memory only)."""
+    if cell_degrees < 1 or cell_degrees > 30:
+        raise ValueError("Cell size outside supported range")
+    cells = {}
+    for item in catalog:
+        lat, lon = validate_coordinate(item["latitude"], item["longitude"])
+        key = (math.floor(lat / cell_degrees), math.floor(lon / cell_degrees))
+        cells.setdefault(key, []).append(item)
+    return {"cell_degrees": cell_degrees, "cells": cells}
+
+
+def suggest_indexed(latitude: float, longitude: float, index: dict,
+                    category: str, limit: int = 5, radius_km: float = 250) -> list[dict]:
+    """Exact distance ranking after a conservative latitude/longitude prefilter."""
+    lat, lon = validate_coordinate(latitude, longitude)
+    if not 0 < radius_km <= 1000:
+        raise ValueError("Radius must be between 0 and 1000 km")
+    degrees = index["cell_degrees"]
+    lat_delta = min(180.0, radius_km / 110.5 + 0.1)
+    latitude_end = min(90.0, abs(lat) + lat_delta)
+    cos_bound = math.cos(math.radians(latitude_end))
+    lon_delta = 180.0 if cos_bound < 0.001 else min(180.0, radius_km / (110.5 * cos_bound) + 0.1)
+    candidate = []
+    start_lat = math.floor(max(-90, lat - lat_delta) / degrees)
+    end_lat = math.floor(min(90, lat + lat_delta) / degrees)
+    start_lon = math.floor(-180 / degrees)
+    end_lon = math.floor(180 / degrees)
+    lon_ranges = []
+    if lon_delta >= 180:
+        lon_ranges = [(start_lon, end_lon)]
+    else:
+        low, high = lon - lon_delta, lon + lon_delta
+        for shift in (-360, 0, 360):
+            left = max(-180, low + shift)
+            right = min(180, high + shift)
+            if left <= right:
+                lon_ranges.append((math.floor(left / degrees), math.floor(right / degrees)))
+    visited = set()
+    for a in range(start_lat, end_lat + 1):
+        for left, right in lon_ranges:
+            for b in range(left, right + 1):
+                if (a, b) not in visited:
+                    candidate.extend(index["cells"].get((a, b), ()))
+                    visited.add((a, b))
+    return suggest(lat, lon, candidate, category, limit, radius_km)
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Local-only suggestions. Coordinates must be supplied explicitly.")
     parser.add_argument("--latitude", type=float, required=True)

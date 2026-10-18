@@ -55,3 +55,12 @@ seaplane bases, closed facilities, and balloon ports are excluded. A small
 set of curated port examples remains: **this is not a complete global
 seaport catalog**. Verify facilities and regional VHF frequencies before use.
 The installer still needs manual station coordinates and explicit opt-in.
+
+## Performance prototype
+
+\`build_spatial_index\` and \`suggest_indexed\` provide an optional in-memory
+grid-based facility lookup. It reduces the number of distance calculations for
+repeated regional searches, including locations near the date line.
+Use \`python tests/benchmark_regional_selection.py\` to compare results
+against exhaustive search on the bundled global airport catalog.
+The interactive wizard still uses the simple exhaustive lookup for now.

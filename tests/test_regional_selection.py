@@ -54,5 +54,24 @@ class RegionalTests(unittest.TestCase):
     def test_station_region_rejects_bad_facility(self):
         with self.assertRaises(ValueError):
             region.build_station_region(45.27, -66.05, {"port": {"name": "", "latitude": 45, "longitude": -66}})
+    def test_indexed_matches_linear(self):
+        catalog = [
+            {"name": "Atlantic", "category": "port", "latitude": 45.2, "longitude": -66.1},
+            {"name": "Pacific", "category": "port", "latitude": 49, "longitude": -123},
+            {"name": "International date line east", "category": "port", "latitude": 0, "longitude": 179.8},
+            {"name": "International date line west", "category": "port", "latitude": 0, "longitude": -179.8},
+            {"name": "Polar", "category": "airport", "latitude": 89.5, "longitude": 80},
+        ]
+        index = region.build_spatial_index(catalog)
+        for lat, lon, category, radius in [
+            (45.25, -66.05, "port", 250),
+            (0, 179.9, "port", 100),
+            (0, -179.9, "port", 100),
+            (89.4, -120, "airport", 500),
+            (50, 20, "airport", 250),
+        ]:
+            normal = region.suggest(lat, lon, catalog, category, radius_km=radius)
+            indexed = region.suggest_indexed(lat, lon, index, category, radius_km=radius)
+            self.assertEqual(normal, indexed)
 if __name__ == "__main__":
     unittest.main()
