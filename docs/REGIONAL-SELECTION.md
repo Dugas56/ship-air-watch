@@ -40,3 +40,18 @@ selected port and airport. It processes the file within the browser; there is no
 upload, no external map tile request, and no connection to a running receiver.
 This is deliberately a standalone **read-only** preview, not the integrated
 marine/aircraft tracking map yet.
+
+## Expanded global airport catalog
+
+The bundled \`regional_facilities.json\` catalog now includes airport entries
+imported from **OurAirports** (https://ourairports.com/data/), which publishes
+its airport dataset in the public domain (provided without an accuracy
+guarantee). The snapshot was downloaded on 2026-10-18. The importer is
+\`linux-pi/installers/common/import_ourairports.py\`, which takes a locally
+downloaded \`airports.csv\` file; it does **not** make network requests.
+
+The import covers OurAirports large, medium and small airports. Heliports,
+seaplane bases, closed facilities, and balloon ports are excluded. A small
+set of curated port examples remains: **this is not a complete global
+seaport catalog**. Verify facilities and regional VHF frequencies before use.
+The installer still needs manual station coordinates and explicit opt-in.
