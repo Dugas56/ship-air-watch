@@ -69,6 +69,20 @@ The RC2 archive checksum was verified during release preparation. The current re
 
 **Third-party artwork, fonts, libraries, binaries, and other externally sourced materials** retain their own licences and terms; the project MIT licence does not replace those terms. See the [ship icon attributions](web-console/assets/ship-icons/ATTRIBUTION.md), bundled font licence files, and satellite library licence notice. Some Flaticon artwork may require separate licensing for redistribution; **review those terms before mirroring or repackaging assets**. No ownership of third-party marks or assets is claimed.
 
+## Regional setup roadmap (planned; not yet automatic)
+
+The current RC2 release does **not** automatically detect the nearest port or airport or configure all regional channels. The installer supports station location configuration, but users must review their receiver and map setup.
+
+Planned **community-edition** improvements:
+
+- Ask for permission to use an approximate location, or allow manual city/coordinates entry.
+- Suggest nearby seaports and airports, including regional facilities, and let the operator override suggestions.
+- Centre vessel/aircraft maps on the selected location.
+- Offer region-appropriate **marine and aviation voice channel presets**, with user confirmation and respect for local rules.
+- Preserve independent SDR-device assignments, with clear guidance for users with two or more receivers.
+- Keep existing standard AIS and ADS-B receiver frequencies separate from local voice-channel presets: AIS commonly uses **161.975/162.025 MHz**, and 1090 MHz ADS-B reception is not tied to a specific airport.
+
+**Status:** This is a development roadmap, not a currently implemented setup wizard. Automatic location discovery must be opt-in and should not expose precise coordinates publicly by default.
 ## Planned Pro edition (not yet released)
 
 We are exploring an optional **Ship & Air Watch Pro** offering for advanced users, while keeping the current community release available. The Pro roadmap is **proposed, not a promise of delivery**, and final features, pricing, licensing, and availability have not been announced.
@@ -81,4 +95,5 @@ Have an idea for Pro? Open a GitHub issue with a feature request. This section w
 ## Project status
 
 Issues, installer feedback, and reproducible bug reports are welcome. Remaining work includes native Windows/macOS receiver installers, end-to-end hardware testing, live-audio verification, OTA safety checks, and a comprehensive public security and dependency audit.
+
 
