@@ -395,6 +395,40 @@ def main() -> int:
     cfg["station"]["location_label"] = ask("Location description", "")
     cfg["station"]["latitude"] = ask("Latitude", "")
     cfg["station"]["longitude"] = ask("Longitude", "")
+    # Explicit opt-in: no geolocation service is contacted.
+    if yes_no("Suggest nearby ports and airports from a local catalog?", False):
+        from regional_selection import suggest, validate_coordinate
+        try:
+            lat, lon = validate_coordinate(cfg["station"]["latitude"], cfg["station"]["longitude"])
+            default_catalog = str(Path(__file__).resolve().parent / "regional_facilities.json")
+            catalog_path = Path(ask("Local facility catalog (JSON)", default_catalog)).expanduser()
+            catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+            if not isinstance(catalog, list):
+                raise ValueError("Facility catalog must be a JSON array")
+            cfg["station"]["regional_suggestions"] = {}
+            for category in ("port", "airport"):
+                options = suggest(lat, lon, catalog, category)
+                print("Nearby " + category + "s:")
+                for number, option in enumerate(options, 1):
+                    print("  " + str(number) + ". " + option["name"] + " (" + str(option["distance_km"]) + " km)")
+                if options:
+                    choice = ask("Choose " + category + " number or Enter to skip", "")
+                    if choice:
+                        index = int(choice) - 1
+                        if not 0 <= index < len(options):
+                            raise ValueError("Selection out of range")
+                        selected = options[index]
+                        cfg["station"]["regional_suggestions"][category] = {
+                            "name": selected["name"],
+                            "latitude": selected["latitude"],
+                            "longitude": selected["longitude"],
+                        }
+                else:
+                    print("  No entries in range; check catalog coverage.")
+            print("Regional suggestions saved in preview only; SDR tuning unchanged.")
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("WARN: No regional suggestion applied: " + str(exc))
+            cfg["station"].pop("regional_suggestions", None)
     collect_ota_consent(target, cfg["station"], cfg["installation"])
 
     if target == "remote":

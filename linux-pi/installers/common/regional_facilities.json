@@ -1,0 +1,6 @@
+[
+  {"name":"Port of Saint John","category":"port","latitude":45.251,"longitude":-66.063},
+  {"name":"Saint John Airport (CYSJ)","category":"airport","latitude":45.3161,"longitude":-65.8903},
+  {"name":"Halifax Stanfield International Airport (CYHZ)","category":"airport","latitude":44.8808,"longitude":-63.5086},
+  {"name":"Port of Halifax","category":"port","latitude":44.6453,"longitude":-63.5724}
+]
