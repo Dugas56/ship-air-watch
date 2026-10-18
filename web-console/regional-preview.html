@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ship & Air Watch — Regional Preview</title>
+<style>
+body{font:16px system-ui,sans-serif;margin:0;background:#0c1724;color:#edf5fb}
+main{max-width:800px;margin:3rem auto;padding:1.5rem}
+article{background:#182a3b;padding:1.2rem;border-radius:12px;margin:1rem 0}
+h1{color:#74d6ef}label{display:block;margin:1rem 0}
+input{max-width:100%}dt{color:#9fbccc}dd{margin:0 0 1rem}
+small{color:#a6bbcb}
+</style>
+</head>
+<body><main>
+<h1>Ship & Air Watch — Regional Preview</h1>
+<p>Inspect a station configuration file locally. Nothing is uploaded, no live map or receiver is changed.</p>
+<label>Choose a setup configuration JSON file <input type="file" id="config" accept=".json,application/json"></label>
+<article id="result" role="status" aria-live="polite">Choose a configuration to inspect its regional selections.</article>
+<small>RC3 preview only. Keep private configurations private. This page works without external services.</small>
+<script>
+"use strict";
+const input=document.getElementById("config"), result=document.getElementById("result");
+function row(parent,label,value){
+ const dl=document.createElement("dl"),dt=document.createElement("dt"),dd=document.createElement("dd");
+ dt.textContent=label;dd.textContent=String(value);dl.append(dt,dd);parent.append(dl);
+}
+input.addEventListener("change",async()=>{
+ result.replaceChildren();
+ const file=input.files&&input.files[0];if(!file)return;
+ if(file.size>1024*1024){result.textContent="Configuration too large.";return;}
+ try{
+  const config=JSON.parse(await file.text());
+  const station=config.station||{}, preview=station.region_preview||{};
+  const center=preview.map&&preview.map.center;
+  if(!center||!Number.isFinite(Number(center.latitude))||!Number.isFinite(Number(center.longitude))){
+   throw Error("No valid regional map preview in this configuration.");
+  }
+  row(result,"Station",station.name||"Unnamed");
+  row(result,"Map centre",center.latitude+", "+center.longitude);
+  for(const type of ["port","airport"]){
+   const facility=preview.selected_facilities&&preview.selected_facilities[type];
+   row(result,type==="port"?"Selected port":"Selected airport",facility?facility.name:"Not selected");
+  }
+  row(result,"Status","Preview only — nothing applied");
+ }catch(error){result.textContent="Unable to show preview: "+error.message;}
+});
+</script>
+</main></body></html>

@@ -31,3 +31,12 @@ It records chosen facility suggestions in the configuration preview and does
 not select radio frequencies, control receivers, or change the running Pi.
 An expanded, licensed/verified facility catalog and real end-to-end wizard
 validation remain required before claiming automatic regional setup.
+
+## Offline browser preview
+
+The new \`web-console/regional-preview.html\` page accepts a locally selected
+setup JSON configuration with \`station.region_preview\` and displays map centre,
+selected port and airport. It processes the file within the browser; there is no
+upload, no external map tile request, and no connection to a running receiver.
+This is deliberately a standalone **read-only** preview, not the integrated
+marine/aircraft tracking map yet.
