@@ -71,3 +71,18 @@ The interactive setup wizard now constructs the spatial index once from the
 selected local catalog and uses it to rank nearby airport and seaport entries.
 This changes lookup performance only; selection is still opt-in, and it does
 not change the running map, service, or radio receiver frequencies.
+
+## Seaport data importer (not yet populated worldwide)
+
+The new \`import_unlocode_ports.py\` accepts a **locally supplied** UN/LOCODE
+CSV extract with columns \`Country, Location, Name, Function, Coordinates\`.
+It filters rows marked as seaports and validates the location coordinates,
+preserving the worldwide OurAirports records in the output JSON.
+
+Example: \`python linux-pi/installers/common/import_unlocode_ports.py local-unlocode.csv linux-pi/installers/common/regional_facilities.json new-regional-facilities.json\`
+
+UN/LOCODE is a trade and transport location list; a seaport function does
+not guarantee a publicly accessible harbour or VHF listening station.
+Source terms and current data quality must be verified before redistributing
+a comprehensive seaport snapshot. The included catalog still contains only
+the two original example ports; **no global port dataset has been shipped yet**.
