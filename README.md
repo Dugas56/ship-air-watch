@@ -69,6 +69,16 @@ The RC2 archive checksum was verified during release preparation. The current re
 
 **Third-party artwork, fonts, libraries, binaries, and other externally sourced materials** retain their own licences and terms; the project MIT licence does not replace those terms. See the [ship icon attributions](web-console/assets/ship-icons/ATTRIBUTION.md), bundled font licence files, and satellite library licence notice. Some Flaticon artwork may require separate licensing for redistribution; **review those terms before mirroring or repackaging assets**. No ownership of third-party marks or assets is claimed.
 
+## Planned Pro edition (not yet released)
+
+We are exploring an optional **Ship & Air Watch Pro** offering for advanced users, while keeping the current community release available. The Pro roadmap is **proposed, not a promise of delivery**, and final features, pricing, licensing, and availability have not been announced.
+
+Potential Pro capabilities under consideration include advanced fleet and aircraft history analytics, expanded alert and notification workflows, enhanced multi-receiver management, richer dashboards and reporting, and simpler remote monitoring and administration.
+
+**The Pro edition is not included in this repository.** No Pro-only implementation, private configuration, licence keys, or paid-service credentials are published here. The [MIT Licence](LICENSE) applies to original code distributed in this public repository; third-party materials retain their own licences.
+
+Have an idea for Pro? Open a GitHub issue with a feature request. This section will be updated when plans are finalized.
 ## Project status
 
 Issues, installer feedback, and reproducible bug reports are welcome. Remaining work includes native Windows/macOS receiver installers, end-to-end hardware testing, live-audio verification, OTA safety checks, and a comprehensive public security and dependency audit.
+
