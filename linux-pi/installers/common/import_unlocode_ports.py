@@ -40,6 +40,8 @@ def import_ports(csv_path: Path, catalog_path: Path, output_path: Path) -> int:
         if not expected.issubset(reader.fieldnames or []):
             raise ValueError("Missing required UN/LOCODE CSV columns")
         for row in reader:
+            if (row.get("Change") or "").strip().upper() == "X":
+                continue
             function = (row.get("Function") or "").strip()
             if not function.startswith("1"):
                 continue

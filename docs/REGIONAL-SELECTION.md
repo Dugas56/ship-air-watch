@@ -86,3 +86,19 @@ not guarantee a publicly accessible harbour or VHF listening station.
 Source terms and current data quality must be verified before redistributing
 a comprehensive seaport snapshot. The included catalog still contains only
 the two original example ports; **no global port dataset has been shipped yet**.
+
+## Global seaport catalog snapshot (2026-10-18)
+
+The bundled catalog now includes **11,788** geocoded sea-port-function
+UN/LOCODE rows from the datasets/un-locode public-domain/PDDL
+\`data/code-list.csv\` distribution, alongside two curated demonstration
+ports and 48,100 OurAirports airports. Source:
+https://github.com/datasets/un-locode (UN/LOCODE data originally from UNECE).
+The importer excludes entries flagged for deletion, rows without coordinates,
+and records without the seaport function code.
+
+**Important:** UN/LOCODE identifies *transport/trade locations*, not necessarily
+individual docks, navigable harbours, live AIS stations, public listening
+locations, or authoritative local marine radio-channel assignments. Dates,
+accuracy and data gaps vary. Users should review suggested facilities and
+confirm regional radio channels. Geographic lookup is still opt-in.
