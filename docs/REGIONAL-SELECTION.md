@@ -64,3 +64,10 @@ repeated regional searches, including locations near the date line.
 Use \`python tests/benchmark_regional_selection.py\` to compare results
 against exhaustive search on the bundled global airport catalog.
 The interactive wizard still uses the simple exhaustive lookup for now.
+
+## Wizard indexed lookup
+
+The interactive setup wizard now constructs the spatial index once from the
+selected local catalog and uses it to rank nearby airport and seaport entries.
+This changes lookup performance only; selection is still opt-in, and it does
+not change the running map, service, or radio receiver frequencies.

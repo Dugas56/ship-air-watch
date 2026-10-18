@@ -397,7 +397,7 @@ def main() -> int:
     cfg["station"]["longitude"] = ask("Longitude", "")
     # Explicit opt-in: no geolocation service is contacted.
     if yes_no("Suggest nearby ports and airports from a local catalog?", False):
-        from regional_selection import suggest, validate_coordinate, build_station_region
+        from regional_selection import suggest_indexed, build_spatial_index, validate_coordinate, build_station_region
         try:
             lat, lon = validate_coordinate(cfg["station"]["latitude"], cfg["station"]["longitude"])
             default_catalog = str(Path(__file__).resolve().parent / "regional_facilities.json")
@@ -405,9 +405,10 @@ def main() -> int:
             catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
             if not isinstance(catalog, list):
                 raise ValueError("Facility catalog must be a JSON array")
+            index = build_spatial_index(catalog)
             cfg["station"]["regional_suggestions"] = {}
             for category in ("port", "airport"):
-                options = suggest(lat, lon, catalog, category)
+                options = suggest_indexed(lat, lon, index, category)
                 print("Nearby " + category + "s:")
                 for number, option in enumerate(options, 1):
                     print("  " + str(number) + ". " + option["name"] + " (" + str(option["distance_km"]) + " km)")
