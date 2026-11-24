@@ -2,6 +2,12 @@
 
 **Version 0.1.0 RC2 · Public preview · Not production-ready**
 
+**Official ShipWatch website:** https://shipwatch.atlanticlink.ca/  
+**International beta program:** https://shipwatch.atlanticlink.ca/beta.html  
+**Guides:** [AIS ship tracking](https://shipwatch.atlanticlink.ca/ais-ship-tracking.html) · [ADS-B aircraft tracking](https://shipwatch.atlanticlink.ca/adsb-aircraft-tracking.html) · [Raspberry Pi SDR station](https://shipwatch.atlanticlink.ca/raspberry-pi-sdr-station.html)
+
+This repository is the public technical preview. The ShipWatch website carries the current launch, beta-testing, hardware-evaluation and project information.
+
 Ship & Air Watch is a self-hosted marine and aviation monitoring project. It combines **AIS vessel reception**, **ADS-B aircraft tracking**, a **marine VHF listening post**, and a browser-based radio and map console. It is designed around affordable RTL-SDR receivers and a Raspberry Pi or Linux host.
 
 > **Release status:** This is a release candidate for experimentation and development. Full hardware installation is currently targeted at Linux/Raspberry Pi. Do not assume the Windows or macOS receiver installers are complete.
